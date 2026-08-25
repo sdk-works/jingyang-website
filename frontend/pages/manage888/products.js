@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import axios from 'axios';
+import TranslationPanel from '../../components/admin/TranslationPanel';
 
 const CATS = ['tech','system','parts'];
 const CAT_LABELS = { tech:'产品技术', system:'配套系统', parts:'设备配件' };
@@ -151,6 +152,7 @@ export default function AdminProducts() {
 
   return (
     <AdminLayout title="产品管理">
+      <TranslationPanel entityType="product" auth={auth}/>
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-500">共 {products.length} 个产品</span>

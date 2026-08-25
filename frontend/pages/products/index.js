@@ -5,19 +5,21 @@ import axios from 'axios';
 import Layout from '../../components/common/Layout';
 import { useRouter } from 'next/router';
 
-const DEFAULT_CATS = [
-  { id:1, name:'全部', slug:'all' },
-  { id:2, name:'玻璃温室', slug:'glass' },
-  { id:3, name:'阳光板温室', slug:'pc' },
-  { id:4, name:'日光温室', slug:'solar' },
-  { id:5, name:'薄膜温室', slug:'film' },
-  { id:6, name:'配件系统', slug:'parts' },
+const PRODUCT_IMAGES = [
+  '/images/photo/产品技术/文洛型玻璃温室.jpg', '/images/photo/产品技术/阳光板温室.jpg',
+  '/images/photo/产品技术/日光温室.jpg', '/images/photo/产品技术/薄膜连栋温室.jpg',
+  '/images/photo/产品技术/椭圆管棚.jpg', '/images/photo/配套系统/温室降温系统.jpg',
+  '/images/photo/配套系统/温室喷灌系统.jpg', '/images/photo/设备配件/温室配件1.jpg',
 ];
+
+function ProductImage({ src, fallback, alt }) {
+  const [failed, setFailed] = useState(false);
+  return <img src={!failed && src ? src : fallback} alt={alt} onError={() => setFailed(true)} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"/>;
+}
 
 export default function ProductsPage() {
   const { t } = useTranslation('common');
   const { locale = 'zh' } = useRouter();
-  const [cats, setCats] = useState(DEFAULT_CATS);
   const [activeCat, setActiveCat] = useState('all');
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +39,9 @@ export default function ProductsPage() {
 
   const getTxt = (item, field) => item[field];
 
-  const filterList = activeCat === 'all' ? list : list.filter(item => item.category_slug === activeCat);
+  const cats = ['all','tech','system','parts'].map((slug, index) => ({ id:index, slug, name:t(`products.categories.${slug}`) }));
+
+  const filterList = activeCat === 'all' ? list : list.filter(item => (item.category_slug || item.category) === activeCat);
 
   return (
     <Layout title={`${t('products.title')} - 山东京阳温室科技有限公司`} description={t('products.subtitle')} keywords="温室设备,温室大棚,温室骨架,温室配件,连栋温室">
@@ -64,16 +68,16 @@ export default function ProductsPage() {
             <div className="text-center py-20 text-gray-400">{t('common.empty')}</div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filterList.map(item => (
+              {filterList.map((item, index) => (
                 <div key={item.id} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
                   <div className="aspect-[4/3] overflow-hidden bg-gray-100">
-                    <img src={item.cover || '/images/default-product.jpg'} alt={getTxt(item, 'name')} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"/>
+                    <ProductImage src={item.cover} fallback={PRODUCT_IMAGES[index % PRODUCT_IMAGES.length]} alt={getTxt(item, 'name')}/>
                   </div>
                   <div className="p-5">
                     <h3 className="font-bold text-gray-900 text-lg mb-2 line-clamp-1">{getTxt(item, 'name')}</h3>
                     <p className="text-gray-500 text-sm line-clamp-2 mb-4 min-h-[40px]">{getTxt(item, 'desc')}</p>
                     <a href={`/products/${item.slug}`} className="inline-flex items-center text-primary-600 text-sm font-medium hover:underline">
-                      {t('common.view_detail')}
+                      {t('common.details')}
                       <svg className="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                     </a>
                   </div>

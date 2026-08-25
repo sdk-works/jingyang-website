@@ -69,6 +69,7 @@ app.listen(PORT, '0.0.0.0', () => {
 📡 端口: ${PORT}
 ℹ️  数据库状态请访问 /health
 `);
+  require('./services/translationService').startWorker();
 });
 
 module.exports = app;

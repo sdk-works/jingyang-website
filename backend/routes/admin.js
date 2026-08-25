@@ -18,6 +18,7 @@ const { body, validationResult } = require('express-validator');
 const { query } = require('../config/database');
 const { authenticate, requireRole, ROLES } = require('../middleware/auth');
 const XLSX      = require('xlsx');
+const translationService = require('../services/translationService');
 
 // ── 图片上传配置 ──────────────────────────────────────────
 const UPLOAD_DIR = path.join(__dirname, '../uploads');
@@ -264,8 +265,9 @@ router.post('/products', authenticate, requireRole(ROLES.EDIT), async (req, res)
         );
       }
     }
+    const translation = await translationService.enqueue('product', pid);
     await auditLog(req, 'create', 'products', pid, `新增产品 ${req.body.name||finalSlug}`);
-    res.status(201).json({ id: pid });
+    res.status(201).json({ id: pid, translation });
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error: '+err.message }); }
 });
 
@@ -290,8 +292,9 @@ router.put('/products/:id', authenticate, requireRole(ROLES.EDIT), async (req, r
         );
       }
     }
+    const translation = await translationService.enqueue('product', req.params.id);
     await auditLog(req, 'update', 'products', req.params.id, `更新产品`);
-    res.json({ success: true });
+    res.json({ success: true, translation });
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
 
@@ -346,8 +349,9 @@ router.post('/cases', authenticate, requireRole(ROLES.EDIT), async (req, res) =>
         );
       }
     }
+    const translation = await translationService.enqueue('case', cid);
     await auditLog(req, 'create', 'cases', cid, `新增案例 ${req.body.title||finalSlug}`);
-    res.status(201).json({ id: cid });
+    res.status(201).json({ id: cid, translation });
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error: '+err.message }); }
 });
 
@@ -369,8 +373,9 @@ router.put('/cases/:id', authenticate, requireRole(ROLES.EDIT), async (req, res)
         );
       }
     }
+    const translation = await translationService.enqueue('case', req.params.id);
     await auditLog(req, 'update', 'cases', req.params.id, '更新案例');
-    res.json({ success: true });
+    res.json({ success: true, translation });
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
 
@@ -419,8 +424,9 @@ router.post('/articles', authenticate, requireRole(ROLES.EDIT), async (req, res)
         );
       }
     }
+    const translation = await translationService.enqueue('article', aid);
     await auditLog(req, 'create', 'articles', aid, `发布文章 ${req.body.title||finalSlug}`);
-    res.status(201).json({ id: aid });
+    res.status(201).json({ id: aid, translation });
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error: '+err.message }); }
 });
 
@@ -442,8 +448,9 @@ router.put('/articles/:id', authenticate, requireRole(ROLES.EDIT), async (req, r
         );
       }
     }
+    const translation = await translationService.enqueue('article', req.params.id);
     await auditLog(req, 'update', 'articles', req.params.id, '更新文章');
-    res.json({ success: true });
+    res.json({ success: true, translation });
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
 
@@ -453,6 +460,36 @@ router.delete('/articles/:id', authenticate, requireRole(ROLES.EDIT), async (req
     await auditLog(req, 'delete', 'articles', req.params.id, '删除文章');
     res.json({ success: true });
   } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+// ──────────────────────────────────────────────────────────
+// 自动翻译任务
+// ──────────────────────────────────────────────────────────
+router.get('/translations/status', authenticate, async (req, res) => {
+  try {
+    const { rows } = await query(`SELECT entity_type,status,COUNT(*)::int AS count
+      FROM translation_jobs GROUP BY entity_type,status ORDER BY entity_type,status`);
+    res.json({ configured:translationService.configured(), languages:translationService.TARGETS, data:rows });
+  } catch (err) { res.status(500).json({ error:'读取翻译状态失败' }); }
+});
+
+router.post('/translations/backfill', authenticate, requireRole(ROLES.EDIT), async (req, res) => {
+  try {
+    const entityType = req.body?.entity_type || null;
+    if (entityType && !['product','case','article'].includes(entityType)) return res.status(400).json({ error:'无效的内容类型' });
+    const result = await translationService.backfill(entityType);
+    await auditLog(req, 'translate', entityType || 'all', null, `创建历史内容翻译任务 ${result.count} 条`);
+    res.json({ success:true, ...result });
+  } catch (err) { console.error(err); res.status(500).json({ error:'创建翻译任务失败' }); }
+});
+
+router.post('/translations/retry', authenticate, requireRole(ROLES.EDIT), async (req, res) => {
+  try {
+    const { entity_type, entity_id } = req.body || {};
+    if (!['product','case','article'].includes(entity_type) || !entity_id) return res.status(400).json({ error:'缺少内容类型或ID' });
+    const result = await translationService.enqueue(entity_type, entity_id, true);
+    res.json({ success:true, ...result });
+  } catch (err) { res.status(500).json({ error:err.message }); }
 });
 
 // ──────────────────────────────────────────────────────────

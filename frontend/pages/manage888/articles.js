@@ -5,6 +5,7 @@
 import { useState, useEffect, useRef } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import axios from 'axios';
+import TranslationPanel from '../../components/admin/TranslationPanel';
 
 const EMPTY = { title:'', category:'industry', summary:'', content:'', cover_image:'', video_url:'', is_published:true };
 
@@ -176,6 +177,7 @@ export default function AdminArticles() {
 
   return (
     <AdminLayout title="内容管理">
+      <TranslationPanel entityType="article" auth={auth}/>
       <div className="flex items-center justify-between mb-5">
         <span className="text-sm text-gray-500">共 {articles.length} 篇文章</span>
         <button onClick={openAdd} className="px-4 py-2 bg-primary-600 text-white rounded-xl text-sm font-semibold hover:bg-primary-700">+ 发布新文章</button>

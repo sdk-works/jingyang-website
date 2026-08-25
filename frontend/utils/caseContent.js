@@ -39,6 +39,8 @@ export const CASE_IMAGES = [
 
 export function localizeCase(item, locale) {
   if (!item || locale === 'zh') return item;
+  // 数据库已有目标语言译文时直接使用；这里只为尚未补译的历史中文数据兜底。
+  if (item.title && !/[\u3400-\u9fff]/.test(item.title)) return item;
   const text = CASE_CONTENT[item.slug]?.[locale];
   if (!text) return item;
   return { ...item, title: text[0], address: text[1], province: text[1], desc: text[2], description: text[2] };

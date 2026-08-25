@@ -5,6 +5,7 @@
 import { useState, useEffect, useRef } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import axios from 'axios';
+import TranslationPanel from '../../components/admin/TranslationPanel';
 
 const EMPTY = { title:'', province:'', area:'', greenhouse_type:'', completion_date:'', description:'', is_active:true, cover_image:'' };
 const TYPES = ['文洛型玻璃温室','阳光板温室（PC板）','日光温室','薄膜连栋温室','单体拱棚'];
@@ -106,6 +107,7 @@ export default function AdminCases() {
 
   return (
     <AdminLayout title="工程案例管理">
+      <TranslationPanel entityType="case" auth={auth}/>
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-500">共 {cases.length} 个案例</span>
