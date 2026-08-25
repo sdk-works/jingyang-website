@@ -1,0 +1,24 @@
+# Dependencies and build outputs
+**/node_modules/
+**/.next/
+**/dist/
+**/build/
+
+# Runtime configuration and secrets
+**/.env
+**/.env.*
+!**/.env.example
+**/*.enc
+
+# Runtime data and logs
+backend/uploads/
+*.log
+logs/
+.pm2/
+
+# Editor / OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
