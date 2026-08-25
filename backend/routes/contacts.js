@@ -6,6 +6,7 @@ const express = require('express');
 const router  = express.Router();
 const { body, validationResult } = require('express-validator');
 const nodemailer = require('nodemailer');
+const sanitizeHtml = require('sanitize-html');
 const { query }  = require('../config/database');
 
 function createTransporter() {
@@ -23,6 +24,9 @@ router.post('/', [
   body('email').trim().optional({ checkFalsy: true }).isEmail().withMessage('邮箱格式不正确'),
   body('phone').trim().optional({ checkFalsy: true }).isLength({ max: 50 }),
   body('message').trim().optional({ checkFalsy: true }).isLength({ max: 2000 }),
+  body('country').trim().optional({ checkFalsy: true }).isLength({ max: 100 }),
+  body('greenhouse_type').trim().optional({ checkFalsy: true }).isLength({ max: 100 }),
+  body('area').optional({ checkFalsy: true }).isFloat({ min: 1, max: 10000000 }),
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -45,9 +49,8 @@ router.post('/', [
       contactId = result.rows[0].id;
       console.log(`📋 新咨询已存库: ${name} [${contactId}]`);
     } catch (dbErr) {
-      // DB 不可用时，写入日志但仍返回成功，避免用户重复提交
-      console.error('⚠️  DB写入失败，记录到日志:', dbErr.message);
-      console.log('📋 咨询内容:', { name, country, phone, email, greenhouse_type, area, message });
+      console.error('⚠️  咨询写入数据库失败:', dbErr.message);
+      return res.status(503).json({ success:false, message:'提交暂未保存，请稍后重试或电话联系我们' });
     }
 
     // 异步发邮件
@@ -69,7 +72,10 @@ async function sendEmailNotification(data) {
   if (!transporter) return;
   const to = process.env.SALES_EMAIL || process.env.SMTP_USER;
   if (!to) return;
-  const { name, country, phone, email, greenhouse_type, area, message } = data;
+  const clean = value => sanitizeHtml(String(value || ''), { allowedTags: [], allowedAttributes: {} });
+  const name = clean(data.name), country = clean(data.country), phone = clean(data.phone);
+  const email = clean(data.email), greenhouse_type = clean(data.greenhouse_type);
+  const area = clean(data.area), message = clean(data.message);
   await transporter.sendMail({
     from: process.env.SMTP_FROM || process.env.SMTP_USER,
     to,

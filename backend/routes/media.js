@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const { query } = require('../config/database');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, requireRole, ROLES } = require('../middleware/auth');
 
 const uploadDir = process.env.UPLOAD_DIR || './uploads';
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
@@ -18,7 +18,12 @@ const storage = multer.diskStorage({
     cb(null, dir);
   },
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
+    const extensionByMime = {
+      'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif',
+      'video/mp4': '.mp4', 'video/webm': '.webm',
+    };
+    const ext = extensionByMime[file.mimetype];
+    if (!ext) return cb(new Error('File type not allowed'));
     cb(null, `${uuidv4()}${ext}`);
   }
 });
@@ -37,7 +42,7 @@ const upload = multer({
 });
 
 // POST /api/media/upload
-router.post('/upload', authenticate, upload.single('file'), async (req, res) => {
+router.post('/upload', authenticate, requireRole(ROLES.EDIT), upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
@@ -59,7 +64,9 @@ router.post('/upload', authenticate, upload.single('file'), async (req, res) => 
 // GET /api/media
 router.get('/', authenticate, async (req, res) => {
   try {
-    const { type, page = 1, limit = 20 } = req.query;
+    const { type } = req.query;
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
     const offset = (page - 1) * limit;
     const params = type ? [type, limit, offset] : [limit, offset];
     const where = type ? 'WHERE file_type = $1' : '';
@@ -75,7 +82,7 @@ router.get('/', authenticate, async (req, res) => {
 });
 
 // DELETE /api/media/:id
-router.delete('/:id', authenticate, async (req, res) => {
+router.delete('/:id', authenticate, requireRole(ROLES.EDIT), async (req, res) => {
   try {
     const result = await query('SELECT * FROM media WHERE id = $1', [req.params.id]);
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });

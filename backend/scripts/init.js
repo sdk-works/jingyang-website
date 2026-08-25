@@ -50,7 +50,10 @@ async function init() {
     }
 
     // 3. 确保管理员账号存在，并用正确密码
-    const adminPassword = process.env.ADMIN_PASSWORD || 'Admin@123456';
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    if (!adminPassword || adminPassword.length < 12) {
+      throw new Error('ADMIN_PASSWORD 必须设置且至少 12 位');
+    }
     const hash = await bcrypt.hash(adminPassword, 12);
     await client.query(
       `INSERT INTO users (username, email, password_hash, role, is_active)
@@ -60,7 +63,6 @@ async function init() {
     );
     console.log(`✅ 管理员账号创建/更新成功`);
     console.log(`   用户名: admin`);
-    console.log(`   密码:   ${adminPassword}`);
 
     // 4. 显示数据统计
     const stats = await client.query(`
@@ -78,8 +80,8 @@ async function init() {
     console.log('\n📋 下一步:');
     console.log('   1. 启动后端: cd backend && pm2 start ecosystem.config.js');
     console.log('   2. 启动前端: cd frontend && npm run build && pm2 start ecosystem.config.js');
-    console.log('   3. 访问后台: http://你的域名/admin');
-    console.log(`   4. 登录账号: admin / ${adminPassword}\n`);
+    console.log('   3. 访问后台: http://你的域名/manage888');
+    console.log('   4. 使用安全设置的 admin 密码登录\n');
 
   } catch (err) {
     console.error('\n❌ 初始化失败:', err.message);

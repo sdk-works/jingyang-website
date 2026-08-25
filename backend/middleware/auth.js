@@ -12,7 +12,8 @@ const authenticate = async (req, res, next) => {
     }
 
     const token = authHeader.substring(7);
-    const secret = process.env.JWT_SECRET || 'jingyang-dev-secret-2024';
+    const secret = process.env.JWT_SECRET;
+    if (!secret) return res.status(503).json({ error: 'Authentication service is not configured' });
     const decoded = jwt.verify(token, secret);
 
     // 验证用户仍然存在且激活
@@ -45,4 +46,11 @@ const requireRole = (roles) => (req, res, next) => {
   next();
 };
 
-module.exports = { authenticate, requireRole };
+const ROLES = {
+  READ:    ['viewer', 'editor', 'admin', 'superadmin'],
+  EDIT:    ['editor', 'admin', 'superadmin'],
+  MANAGE:  ['admin', 'superadmin'],
+  SUPER:   ['superadmin'],
+};
+
+module.exports = { authenticate, requireRole, ROLES };

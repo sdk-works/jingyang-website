@@ -170,6 +170,7 @@
   },
   "common": {
     "loading": "Loading...",
+    "empty": "No content available",
     "error": "An error occurred, please refresh and try again",
     "read_more": "Read More",
     "back": "Back",

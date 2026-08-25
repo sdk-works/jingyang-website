@@ -17,15 +17,21 @@ const CASES = [
 // GET /api/cases
 router.get('/', async (req, res) => {
   try {
-    const { lang='zh', page=1, limit=20, greenhouse_type } = req.query;
+    const { lang='zh', greenhouse_type } = req.query;
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
     const offset = (page-1) * limit;
     const params = [lang];
     let sql = `
-      SELECT c.id, c.slug, c.country, c.province, c.area, c.greenhouse_type,
-             c.cover_image, c.images, c.completion_date, c.sort_order,
-             COALESCE(ct.title, c.slug) AS title, ct.description, ct.highlights
+      SELECT c.id, c.slug, c.country, c.province, c.province AS address, c.area, c.greenhouse_type,
+             c.cover_image, c.cover_image AS cover, c.images, c.completion_date, c.sort_order,
+             COALESCE(ct.title, zh.title, c.slug) AS title,
+             COALESCE(ct.description, zh.description) AS description,
+             COALESCE(ct.description, zh.description) AS "desc",
+             COALESCE(ct.highlights, zh.highlights) AS highlights
       FROM cases c
       LEFT JOIN case_translations ct ON c.id=ct.case_id AND ct.lang=$1
+      LEFT JOIN case_translations zh ON c.id=zh.case_id AND zh.lang='zh'
       WHERE c.is_active=true`;
 
     if (greenhouse_type) {
@@ -55,8 +61,11 @@ router.get('/:slug', async (req, res) => {
   try {
     const lang = req.query.lang || 'zh';
     const { rows } = await query(`
-      SELECT c.*, COALESCE(ct.title,c.slug) title, ct.description, ct.highlights
+      SELECT c.*, COALESCE(ct.title,zh.title,c.slug) title,
+             COALESCE(ct.description,zh.description) description,
+             COALESCE(ct.highlights,zh.highlights) highlights
       FROM cases c LEFT JOIN case_translations ct ON c.id=ct.case_id AND ct.lang=$1
+      LEFT JOIN case_translations zh ON c.id=zh.case_id AND zh.lang='zh'
       WHERE c.slug=$2 AND c.is_active=true`, [lang, req.params.slug]);
 
     if (rows.length === 0) {

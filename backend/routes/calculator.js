@@ -49,7 +49,9 @@ router.post('/calculate', async (req, res) => {
     if (!PRICE_RULES[greenhouse_type])   return res.status(400).json({ error: 'Invalid greenhouse type' });
 
     const areaNum = parseFloat(area);
-    if (isNaN(areaNum) || areaNum <= 0) return res.status(400).json({ error: 'Invalid area value' });
+    if (!Number.isFinite(areaNum) || areaNum <= 0 || areaNum > 10000000) {
+      return res.status(400).json({ error: 'Area must be between 1 and 10000000 square meters' });
+    }
 
     // 尝试从 DB 读取自定义单价
     let basePrice = PRICE_RULES[greenhouse_type];
@@ -113,14 +115,15 @@ router.post('/submit', async (req, res) => {
       await query(
         'UPDATE calculator_records SET contact_name=$1,contact_email=$2,contact_phone=$3,country=$4,submitted=true WHERE id=$5',
         [name, email, phone, country, record_id]
-      ).catch(() => {});
+      );
     }
-    if (name) {
+    if (name && String(name).trim().length <= 200) {
       await query(
         'INSERT INTO contacts (name,email,phone,country,source) VALUES ($1,$2,$3,$4,$5)',
         [name, email, phone, country, 'calculator']
-      ).catch(() => {});
+      );
     }
+    if (!name) return res.status(400).json({ success:false, error:'Name is required' });
     res.json({ success: true });
   } catch { res.status(500).json({ error: 'Server error' }); }
 });

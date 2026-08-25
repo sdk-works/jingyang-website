@@ -15,7 +15,7 @@ export default function AdminLogin() {
   const [showPass, setShowPass] = useState(false);
 
   // 🔥 这里读取后端地址
-  const API = process.env.NEXT_PUBLIC_API_URL;
+  const API = process.env.NEXT_PUBLIC_API_URL || '';
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');

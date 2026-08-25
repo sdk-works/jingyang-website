@@ -16,7 +16,7 @@ const path      = require('path');
 const fs        = require('fs');
 const { body, validationResult } = require('express-validator');
 const { query } = require('../config/database');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, requireRole, ROLES } = require('../middleware/auth');
 const XLSX      = require('xlsx');
 
 // ── 图片上传配置 ──────────────────────────────────────────
@@ -35,10 +35,13 @@ const upload = multer({
   storage,
   limits: { fileSize: 8 * 1024 * 1024 }, // 8MB
   fileFilter: (req, file, cb) => {
-    const allowed = /jpeg|jpg|png|gif|webp|mp4|mov|avi/i;
-    if (allowed.test(path.extname(file.originalname)) && (
-        file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')
-    )) cb(null, true);
+    const ext = path.extname(file.originalname).toLowerCase();
+    const allowed = new Map([
+      ['.jpg', ['image/jpeg']], ['.jpeg', ['image/jpeg']], ['.png', ['image/png']],
+      ['.gif', ['image/gif']], ['.webp', ['image/webp']], ['.mp4', ['video/mp4']],
+      ['.mov', ['video/quicktime']], ['.avi', ['video/x-msvideo']],
+    ]);
+    if (allowed.get(ext)?.includes(file.mimetype)) cb(null, true);
     else cb(new Error('仅支持图片（JPG/PNG/GIF/WebP）和视频（MP4/MOV/AVI）'));
   },
 });
@@ -84,7 +87,8 @@ router.post('/login', [
     if (!valid) return res.status(401).json({ error: '用户名或密码错误' });
 
     await query('UPDATE users SET last_login=NOW() WHERE id=$1', [user.id]);
-    const secret = process.env.JWT_SECRET || 'jingyang-dev-secret-2024';
+    const secret = process.env.JWT_SECRET;
+    if (!secret) return res.status(503).json({ error: '认证服务未配置' });
     const token  = jwt.sign(
       { userId: user.id, role: user.role, username: user.username },
       secret, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
@@ -164,7 +168,7 @@ router.get('/contacts/export', authenticate, async (req, res) => {
   } catch { res.status(500).json({ error: 'Export failed' }); }
 });
 
-router.patch('/contacts/:id/status', authenticate, async (req, res) => {
+router.patch('/contacts/:id/status', authenticate, requireRole(ROLES.MANAGE), async (req, res) => {
   try {
     const { status } = req.body;
     await query('UPDATE contacts SET status=$1,updated_at=NOW() WHERE id=$2', [status, req.params.id]);
@@ -173,7 +177,7 @@ router.patch('/contacts/:id/status', authenticate, async (req, res) => {
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
-router.delete('/contacts/:id', authenticate, async (req, res) => {
+router.delete('/contacts/:id', authenticate, requireRole(ROLES.MANAGE), async (req, res) => {
   try {
     await query('DELETE FROM contacts WHERE id=$1', [req.params.id]);
     await auditLog(req, 'delete', 'contacts', req.params.id, '删除咨询');
@@ -185,7 +189,7 @@ router.delete('/contacts/:id', authenticate, async (req, res) => {
 // 图片/媒体上传
 // POST /api/admin/upload
 // ──────────────────────────────────────────────────────────
-router.post('/upload', authenticate, (req, res, next) => {
+router.post('/upload', authenticate, requireRole(ROLES.EDIT), (req, res, next) => {
   // 使用自定义中间件包裹 multer，捕获文件类型/大小错误并返回友好提示
   upload.single('file')(req, res, (err) => {
     if (err) {
@@ -237,7 +241,7 @@ router.get('/products', authenticate, async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
 
-router.post('/products', authenticate, async (req, res) => {
+router.post('/products', authenticate, requireRole(ROLES.EDIT), async (req, res) => {
   try {
     const { slug, category, price_per_sqm, cover_image, video_url, translations } = req.body;
     const finalSlug = slug?.trim() || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2,5)}`;
@@ -265,7 +269,7 @@ router.post('/products', authenticate, async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error: '+err.message }); }
 });
 
-router.put('/products/:id', authenticate, async (req, res) => {
+router.put('/products/:id', authenticate, requireRole(ROLES.EDIT), async (req, res) => {
   try {
     const { category, price_per_sqm, cover_image, video_url, is_active, translations } = req.body;
     await query(
@@ -291,7 +295,7 @@ router.put('/products/:id', authenticate, async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
 
-router.delete('/products/:id', authenticate, async (req, res) => {
+router.delete('/products/:id', authenticate, requireRole(ROLES.EDIT), async (req, res) => {
   try {
     await query('UPDATE products SET is_active=false,updated_at=NOW() WHERE id=$1', [req.params.id]);
     await auditLog(req, 'delete', 'products', req.params.id, '下架产品');
@@ -320,7 +324,7 @@ router.get('/cases', authenticate, async (req, res) => {
   } catch (err) { res.status(500).json({ error: 'Server error' }); }
 });
 
-router.post('/cases', authenticate, async (req, res) => {
+router.post('/cases', authenticate, requireRole(ROLES.EDIT), async (req, res) => {
   try {
     const { slug, country='中国', province, area, greenhouse_type, cover_image,
             images, video_url, completion_date, translations } = req.body;
@@ -347,7 +351,7 @@ router.post('/cases', authenticate, async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error: '+err.message }); }
 });
 
-router.put('/cases/:id', authenticate, async (req, res) => {
+router.put('/cases/:id', authenticate, requireRole(ROLES.EDIT), async (req, res) => {
   try {
     const { province, area, greenhouse_type, cover_image, video_url, completion_date, is_active, translations } = req.body;
     await query(
@@ -370,7 +374,7 @@ router.put('/cases/:id', authenticate, async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
 
-router.delete('/cases/:id', authenticate, async (req, res) => {
+router.delete('/cases/:id', authenticate, requireRole(ROLES.EDIT), async (req, res) => {
   try {
     await query('UPDATE cases SET is_active=false WHERE id=$1', [req.params.id]);
     await auditLog(req, 'delete', 'cases', req.params.id, '下架案例');
@@ -395,7 +399,7 @@ router.get('/articles', authenticate, async (req, res) => {
   } catch (err) { res.status(500).json({ error: 'Server error' }); }
 });
 
-router.post('/articles', authenticate, async (req, res) => {
+router.post('/articles', authenticate, requireRole(ROLES.EDIT), async (req, res) => {
   try {
     const { slug, cover_image, video_url, category='industry', is_published, translations } = req.body;
     const finalSlug = slug?.trim() || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2,5)}`;
@@ -420,7 +424,7 @@ router.post('/articles', authenticate, async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error: '+err.message }); }
 });
 
-router.put('/articles/:id', authenticate, async (req, res) => {
+router.put('/articles/:id', authenticate, requireRole(ROLES.EDIT), async (req, res) => {
   try {
     const { cover_image, video_url, category, is_published, translations } = req.body;
     await query(
@@ -443,7 +447,7 @@ router.put('/articles/:id', authenticate, async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
 
-router.delete('/articles/:id', authenticate, async (req, res) => {
+router.delete('/articles/:id', authenticate, requireRole(ROLES.EDIT), async (req, res) => {
   try {
     await query('DELETE FROM articles WHERE id=$1', [req.params.id]);
     await auditLog(req, 'delete', 'articles', req.params.id, '删除文章');
@@ -455,7 +459,7 @@ router.delete('/articles/:id', authenticate, async (req, res) => {
 // 操作日志
 // GET /api/admin/audit-logs
 // ──────────────────────────────────────────────────────────
-router.get('/audit-logs', authenticate, async (req, res) => {
+router.get('/audit-logs', authenticate, requireRole(ROLES.MANAGE), async (req, res) => {
   try {
     const { page=1, limit=30, resource } = req.query;
     const offset = (page-1)*limit;
@@ -494,6 +498,8 @@ router.post('/users', authenticate, requireSuperAdmin, async (req, res) => {
   try {
     const { username, email, password, role='editor', is_active=true } = req.body;
     if (!username||!email||!password) return res.status(400).json({ error: '用户名、邮箱和密码不能为空' });
+    if (!['viewer','editor','admin','superadmin'].includes(role)) return res.status(400).json({ error:'无效角色' });
+    if (username.length > 100 || email.length > 200) return res.status(400).json({ error:'用户名或邮箱过长' });
     if (password.length < 8) return res.status(400).json({ error: '密码至少8位' });
     const hash = await bcrypt.hash(password, 12);
     const { rows } = await query(
@@ -511,6 +517,11 @@ router.post('/users', authenticate, requireSuperAdmin, async (req, res) => {
 router.put('/users/:id', authenticate, requireSuperAdmin, async (req, res) => {
   try {
     const { username, email, password, role, is_active } = req.body;
+    if (!['viewer','editor','admin','superadmin'].includes(role)) return res.status(400).json({ error:'无效角色' });
+    if (!username || !email || username.length > 100 || email.length > 200) return res.status(400).json({ error:'账号资料无效' });
+    if (req.params.id === req.user.id && (role !== 'superadmin' || is_active === false)) {
+      return res.status(400).json({ error:'不能降低或禁用当前超级管理员账号' });
+    }
     await query(
       'UPDATE users SET username=$1,email=$2,role=$3,is_active=$4,updated_at=NOW() WHERE id=$5',
       [username, email, role, is_active!==false, req.params.id]
@@ -540,13 +551,22 @@ router.delete('/users/:id', authenticate, requireSuperAdmin, async (req, res) =>
 // ──────────────────────────────────────────────────────────
 // 计算器单价管理
 // ──────────────────────────────────────────────────────────
-router.put('/calculator-rules', authenticate, async (req, res) => {
+router.put('/calculator-rules', authenticate, requireRole(ROLES.MANAGE), async (req, res) => {
   try {
     const { base_prices, addon_prices } = req.body;
     const entries = [
       ...Object.entries(base_prices||{}).map(([k,v]) => [`calc_base_${k}`, String(v)]),
       ...Object.entries(addon_prices||{}).map(([k,v]) => [`calc_addon_${k}`, String(v)]),
     ];
+    const allowedKeys = new Set([
+      'calc_base_glass','calc_base_film','calc_base_pc','calc_base_multi-span','calc_base_solar','calc_base_arch',
+      'calc_addon_has_irrigation','calc_addon_has_lighting','calc_addon_has_cooling',
+      'calc_addon_has_smart_control','calc_addon_has_heating',
+    ]);
+    if (!entries.length || entries.some(([key, value]) => !allowedKeys.has(key) ||
+        !Number.isFinite(Number(value)) || Number(value) <= 0 || Number(value) > 100000)) {
+      return res.status(400).json({ error:'价格配置包含无效字段或数值' });
+    }
     for (const [key, value] of entries) {
       await query(
         `INSERT INTO site_settings(key,value,updated_at) VALUES($1,$2,NOW())

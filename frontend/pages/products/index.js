@@ -3,7 +3,7 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import axios from 'axios';
 import Layout from '../../components/common/Layout';
-import { autoTranslate, langMap } from '../../utils/translate';
+import { useRouter } from 'next/router';
 
 const DEFAULT_CATS = [
   { id:1, name:'全部', slug:'all' },
@@ -16,24 +16,15 @@ const DEFAULT_CATS = [
 
 export default function ProductsPage() {
   const { t } = useTranslation('common');
+  const { locale = 'zh' } = useRouter();
   const [cats, setCats] = useState(DEFAULT_CATS);
   const [activeCat, setActiveCat] = useState('all');
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [translated, setTranslated] = useState({});
-  const [mounted, setMounted] = useState(false);
-  const [lang, setLang] = useState('zh');
-
-  // 关键：从 localStorage 读取语言
-  useEffect(() => {
-    setMounted(true);
-    setLang(localStorage.getItem('lang') || 'zh');
-  }, []);
-
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get('/api/products');
+        const res = await axios.get('/api/products', { params:{ lang:locale } });
         if(res.data?.data) setList(res.data.data);
       } catch (e) {
         console.error('产品接口请求失败');
@@ -42,33 +33,9 @@ export default function ProductsPage() {
       }
     };
     fetchData();
-  }, []);
+  }, [locale]);
 
-  // 自动翻译逻辑（与 localStorage 语言同步）
-  useEffect(() => {
-    if (!mounted) return;
-    if (lang === 'zh') {
-      setTranslated({});
-      return;
-    }
-    const target = langMap[lang] || 'en';
-    const doTranslate = async () => {
-      const map = {};
-      for (const item of list) {
-        map[item.id] = {
-          name: await autoTranslate(item.name, target),
-          desc: await autoTranslate(item.desc || '', target),
-        };
-      }
-      setTranslated(map);
-    };
-    if(list.length) doTranslate();
-  }, [lang, mounted, list]);
-
-  const getTxt = (item, field) => {
-    if(lang === 'zh') return item[field];
-    return translated[item.id]?.[field] || item[field];
-  };
+  const getTxt = (item, field) => item[field];
 
   const filterList = activeCat === 'all' ? list : list.filter(item => item.category_slug === activeCat);
 

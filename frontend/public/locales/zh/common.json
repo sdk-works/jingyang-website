@@ -170,6 +170,7 @@
   },
   "common": {
     "loading": "加载中...",
+    "empty": "暂无内容",
     "error": "出现错误，请刷新重试",
     "read_more": "阅读更多",
     "back": "返回",

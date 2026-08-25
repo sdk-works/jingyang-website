@@ -7,7 +7,7 @@
 set -e
 
 # ── 固定配置（已适配你的系统）────────────────────────────
-DEPLOY_DIR="/home/user/greenhouse-website"
+DEPLOY_DIR="${DEPLOY_DIR:-/var/www/jingyang-website}"
 
 # ── 颜色输出 ──────────────────────────────────────────────────
 RED='\033[0;31m'
@@ -76,12 +76,15 @@ init_database() {
     load_env "$env_file"
     DB_NAME="${DB_NAME:-jingyang_web_db}"
     DB_USER="${DB_USER:-jingyang_web_user}"
+    [ -n "$DB_PASSWORD" ] || err "backend/.env 缺少 DB_PASSWORD，拒绝使用默认密码"
+    [ -n "$JWT_SECRET" ] || err "backend/.env 缺少 JWT_SECRET"
+    [ ${#JWT_SECRET} -ge 32 ] || err "JWT_SECRET 至少需要 32 个字符"
 
     sudo -u postgres psql << SQL 2>/dev/null || true
 DO \$\$
 BEGIN
   IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '$DB_USER') THEN
-    CREATE USER $DB_USER WITH PASSWORD '${DB_PASSWORD:-123456}';
+    CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';
   END IF;
 END \$\$;
 
@@ -95,7 +98,7 @@ SQL
     node scripts/init.js
     
     log "数据库初始化完成"
-    log "后台账号：admin   密码：Admin@123456"
+    log "数据库初始化完成；管理员密码请通过安全渠道设置"
 }
 
 # ── 安装依赖 ──────────────────────────────────────────────────
@@ -103,12 +106,12 @@ install_deps() {
     section "安装前后端依赖"
     
     cd "$DEPLOY_DIR/backend"
-    npm install
+    npm ci --omit=dev
     log "后端依赖安装完成"
     
     cd "$DEPLOY_DIR/frontend"
-    rm -rf node_modules package-lock.json .next
-    npm install
+    rm -rf .next
+    npm ci
     log "前端依赖安装完成"
 }
 
@@ -118,7 +121,7 @@ build_frontend() {
     
     cd "$DEPLOY_DIR/frontend"
     [ -f ".env" ] || cp ".env.example" ".env"
-    sudo rm -rf .next
+    rm -rf .next
     
     npm run build
     log "编译完成"
@@ -150,9 +153,9 @@ show_result() {
     
     echo -e "\n${GREEN}════════════════════════════════════════${NC}"
     log "🌐 前台地址：http://localhost:3000"
-    log "🔐 后台地址：http://localhost:3000/admin"
+    log "🔐 后台地址：http://localhost:3000/manage888"
     log "👤 登录账号：admin"
-    log "🔑 登录密码：Admin@123456"
+    log "🔑 登录密码：使用已安全设置的管理员密码"
     log "📡 后端接口：http://localhost:4001"
     echo -e "${GREEN}════════════════════════════════════════${NC}"
 }

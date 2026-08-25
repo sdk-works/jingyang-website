@@ -17,14 +17,18 @@ const FALLBACK_ARTICLES = [
 // GET /api/articles
 router.get('/', async (req, res) => {
   try {
-    const { lang='zh', page=1, limit=10, category } = req.query;
+    const { lang='zh', category } = req.query;
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 10));
     const offset = (page-1) * limit;
     const params = [lang];
     let sql = `
       SELECT a.id, a.slug, a.cover_image, a.category, a.published_at, a.view_count,
-             COALESCE(at.title, a.slug) title, at.summary
+             a.view_count AS views, COALESCE(at.title,zh.title,a.slug) title,
+             COALESCE(at.summary,zh.summary) summary
       FROM articles a
       LEFT JOIN article_translations at ON a.id=at.article_id AND at.lang=$1
+      LEFT JOIN article_translations zh ON a.id=zh.article_id AND zh.lang='zh'
       WHERE a.is_published=true`;
     if (category) { params.push(category); sql += ` AND a.category=$${params.length}`; }
     sql += ` ORDER BY a.published_at DESC LIMIT $${params.length+1} OFFSET $${params.length+2}`;
@@ -51,8 +55,12 @@ router.get('/:slug', async (req, res) => {
   try {
     const lang = req.query.lang || 'zh';
     const { rows } = await query(`
-      SELECT a.*, at.title, at.summary, at.content, at.meta_title, at.meta_description
+      SELECT a.*, COALESCE(at.title,zh.title,a.slug) title,
+             COALESCE(at.summary,zh.summary) summary, COALESCE(at.content,zh.content) content,
+             COALESCE(at.meta_title,zh.meta_title) meta_title,
+             COALESCE(at.meta_description,zh.meta_description) meta_description
       FROM articles a LEFT JOIN article_translations at ON a.id=at.article_id AND at.lang=$1
+      LEFT JOIN article_translations zh ON a.id=zh.article_id AND zh.lang='zh'
       WHERE a.slug=$2 AND a.is_published=true`, [lang, req.params.slug]);
 
     if (rows.length > 0) {

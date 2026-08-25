@@ -13,7 +13,7 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:4001/api/:path*'
+        destination: `${process.env.BACKEND_INTERNAL_URL || 'http://127.0.0.1:4001'}/api/:path*`
       }
     ]
   }

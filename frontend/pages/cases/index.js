@@ -3,26 +3,17 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import axios from 'axios';
 import Layout from '../../components/common/Layout';
-import { autoTranslate, langMap } from '../../utils/translate';
+import { useRouter } from 'next/router';
 
 export default function CasesPage() {
   const { t } = useTranslation('common');
+  const { locale = 'zh' } = useRouter();
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [translated, setTranslated] = useState({});
-  const [mounted, setMounted] = useState(false);
-  const [lang, setLang] = useState('zh');
-
-  // 关键：从 localStorage 读取语言
-  useEffect(() => {
-    setMounted(true);
-    setLang(localStorage.getItem('lang') || 'zh');
-  }, []);
-
   useEffect(() => {
     const fetchCases = async () => {
       try {
-        const res = await axios.get('/api/cases');
+        const res = await axios.get('/api/cases', { params:{ lang:locale } });
         if (res.data?.data) setList(res.data.data);
       } catch (e) {
         console.error('案例接口加载失败');
@@ -31,34 +22,9 @@ export default function CasesPage() {
       }
     };
     fetchCases();
-  }, []);
+  }, [locale]);
 
-  // 自动翻译逻辑（与 localStorage 语言同步）
-  useEffect(() => {
-    if (!mounted) return;
-    if (lang === 'zh') {
-      setTranslated({});
-      return;
-    }
-    const targetLang = langMap[lang] || 'en';
-    const translateAllCases = async () => {
-      const map = {};
-      for (const item of list) {
-        map[item.id] = {
-          title: await autoTranslate(item.title, targetLang),
-          address: await autoTranslate(item.address || '', targetLang),
-          desc: await autoTranslate(item.desc || '', targetLang),
-        };
-      }
-      setTranslated(map);
-    };
-    if (list.length) translateAllCases();
-  }, [lang, mounted, list]);
-
-  const getCaseText = (item, field) => {
-    if (lang === 'zh') return item[field];
-    return translated[item.id]?.[field] || item[field];
-  };
+  const getCaseText = (item, field) => item[field];
 
   return (
     <Layout title={`${t('cases.title')} - 山东京阳温室科技有限公司`} description={t('cases.subtitle')} keywords="温室工程案例,大棚项目,温室施工实例,各地温室项目">

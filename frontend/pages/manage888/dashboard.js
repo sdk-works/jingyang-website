@@ -26,7 +26,7 @@ export default function Dashboard() {
   const [loading,  setLoading]  = useState(true);
 
   // 读取正确的后端地址
-  const API = process.env.NEXT_PUBLIC_API_URL;
+  const API = process.env.NEXT_PUBLIC_API_URL || '';
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';

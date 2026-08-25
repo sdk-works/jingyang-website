@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
+import { useRouter } from 'next/router';
 
 const LANGUAGES = [
   { code: 'zh', label: '中文',    flag: '🇨🇳' },
@@ -11,24 +12,16 @@ const LANGUAGES = [
 
 export default function Navbar({ transparent = false }) {
   const { t, i18n } = useTranslation();
+  const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const langRef = useRef(null);
 
   const [mounted, setMounted] = useState(false);
-  const [currentLang, setCurrentLang] = useState('zh');
-
-  // 初始化语言
   useEffect(() => {
     setMounted(true);
-    const saved = localStorage.getItem('lang') || 'zh';
-    setCurrentLang(saved);
-
-    if (i18n && typeof i18n.changeLanguage === 'function') {
-      i18n.changeLanguage(saved).catch(err => console.error('语言初始化失败:', err));
-    }
-  }, [i18n]);
+  }, []);
 
   const isTransparent = transparent && !scrolled;
 
@@ -46,36 +39,23 @@ export default function Navbar({ transparent = false }) {
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
 
-  // ✅ 真正能切换语言的最终版
-  const changeLanguage = (lang) => {
-    try {
-      localStorage.setItem('lang', lang);
-      setCurrentLang(lang);
-
-      if (i18n?.changeLanguage) {
-        i18n.changeLanguage(lang);
-      }
-
-      // 强制刷新，让语言 100% 生效
-      setTimeout(() => {
-        window.location.reload();
-      }, 50);
-    } catch (err) {
-      console.error('切换失败', err);
-    }
+  const changeLanguage = async (lang) => {
+    localStorage.setItem('lang', lang);
+    setLangOpen(false);
+    await router.push(router.asPath, router.asPath, { locale: lang });
   };
 
-  const activeLangCode = mounted && i18n?.language ? i18n.language : currentLang;
+  const activeLangCode = mounted ? (router.locale || i18n?.language || 'zh') : 'zh';
   const activeLang = LANGUAGES.find(l => l.code === activeLangCode) || LANGUAGES[0];
 
   const navLinks = [
-    { href: '/',           label: '首页' },
-    { href: '/about',      label: '公司介绍' },
-    { href: '/products',   label: '产品服务' },
-    { href: '/cases',      label: '工程案例' },
-    { href: '/news',       label: '新闻动态' },
-    { href: '/calculator', label: '预算计算器' },
-    { href: '/contact',    label: '联系我们' },
+    { href: '/',           label: t('nav.home') },
+    { href: '/about',      label: t('nav.about') },
+    { href: '/products',   label: t('nav.products') },
+    { href: '/cases',      label: t('nav.cases') },
+    { href: '/news',       label: t('nav.news') },
+    { href: '/calculator', label: t('nav.calculator') },
+    { href: '/contact',    label: t('nav.contact') },
   ];
 
   const navBg = isTransparent ? 'bg-transparent' : 'bg-white/98 backdrop-blur-sm shadow-md';
@@ -147,7 +127,7 @@ export default function Navbar({ transparent = false }) {
               href="/contact"
               className="hidden sm:inline-flex px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 shadow-sm"
             >
-              立即咨询
+              {t('nav.consult')}
             </Link>
 
             <button
@@ -167,6 +147,20 @@ export default function Navbar({ transparent = false }) {
           </div>
         </div>
       </div>
+      {mobileOpen && (
+        <div className="lg:hidden bg-white border-t border-gray-100 shadow-lg px-4 py-3">
+          {navLinks.map(link => (
+            <Link key={link.href} href={link.href} onClick={() => setMobileOpen(false)}
+              className="block px-3 py-2.5 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
+              {link.label}
+            </Link>
+          ))}
+          <Link href="/contact" onClick={() => setMobileOpen(false)}
+            className="mt-2 flex justify-center px-4 py-2.5 bg-primary-600 text-white text-sm font-medium rounded-xl">
+            {t('nav.consult')}
+          </Link>
+        </div>
+      )}
     </nav>
   );
 }

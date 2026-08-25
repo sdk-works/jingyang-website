@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Layout from '../components/common/Layout';
 import Link from 'next/link';
+import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 const COMPANY = {
   phone1: '152-7589-8666',
@@ -16,6 +17,10 @@ function AutoImg({ src, alt, fallbackIcon, className = '' }) {
       <span className="text-3xl opacity-50">{fallbackIcon || '🌿'}</span>
     </div>
   );
+}
+
+export async function getStaticProps({ locale = 'zh' }) {
+  return { props: { ...(await serverSideTranslations(locale, ['common'])) } };
 }
 
 export default function HomePage() {

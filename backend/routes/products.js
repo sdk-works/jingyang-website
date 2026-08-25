@@ -27,11 +27,15 @@ router.get('/', async (req, res) => {
   try {
     const { lang = 'zh', category } = req.query;
     let sql = `
-      SELECT p.id, p.slug, p.category, p.cover_image, p.price_per_sqm, p.sort_order, p.is_active,
-             COALESCE(pt.name, p.slug) AS name,
-             pt.description, pt.features, pt.specs
+      SELECT p.id, p.slug, p.category, p.category AS category_slug,
+             p.cover_image, p.cover_image AS cover, p.price_per_sqm, p.sort_order, p.is_active,
+             COALESCE(pt.name, zh.name, p.slug) AS name,
+             COALESCE(pt.description, zh.description) AS description,
+             COALESCE(pt.description, zh.description) AS desc,
+             COALESCE(pt.features, zh.features) AS features, COALESCE(pt.specs, zh.specs) AS specs
       FROM products p
       LEFT JOIN product_translations pt ON p.id = pt.product_id AND pt.lang = $1
+      LEFT JOIN product_translations zh ON p.id = zh.product_id AND zh.lang = 'zh'
       WHERE p.is_active = true`;
     const params = [lang];
     if (category) { params.push(category); sql += ` AND p.category = $${params.length}`; }
@@ -59,9 +63,12 @@ router.get('/:slug', async (req, res) => {
   try {
     const lang = req.query.lang || 'zh';
     const { rows } = await query(`
-      SELECT p.*, pt.name, pt.description, pt.features, pt.specs
+      SELECT p.*, COALESCE(pt.name,zh.name,p.slug) name,
+             COALESCE(pt.description,zh.description) description,
+             COALESCE(pt.features,zh.features) features, COALESCE(pt.specs,zh.specs) specs
       FROM products p
       LEFT JOIN product_translations pt ON p.id=pt.product_id AND pt.lang=$1
+      LEFT JOIN product_translations zh ON p.id=zh.product_id AND zh.lang='zh'
       WHERE p.slug=$2 AND p.is_active=true`, [lang, req.params.slug]);
 
     if (rows.length === 0) {

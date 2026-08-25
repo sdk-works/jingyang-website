@@ -1,6 +1,4 @@
 import '../styles/globals.css';
-// 新增：引入i18n初始化文件（下一步会创建）
-import '../i18n';
 import { appWithTranslation } from 'next-i18next';
 import { Toaster } from 'react-hot-toast';
 import Head from 'next/head';

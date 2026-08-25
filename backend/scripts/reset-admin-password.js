@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
  * 重置管理员密码脚本
- * 用法: node scripts/reset-admin-password.js
+ * 用法: node scripts/reset-admin-password.js '新的强密码'
  * 
  * 在服务器上安装好 bcryptjs 依赖后运行此脚本
- * 它会将 admin 账号密码重置为 Admin@123456
+ * 密码不会打印到终端或日志。
  */
 
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
@@ -21,11 +21,11 @@ const pool = new Pool({
 });
 
 async function resetPassword() {
-  const password = process.argv[2] || 'Admin@123456';
-  console.log(`\n🔑 正在为 admin 账号设置密码: ${password}`);
+  const password = process.argv[2];
+  if (!password || password.length < 12) throw new Error('必须提供至少 12 位的新密码');
+  console.log('\n🔑 正在更新 admin 密码...');
   
   const hash = await bcrypt.hash(password, 12);
-  console.log(`   Hash: ${hash}`);
   
   const client = await pool.connect();
   try {
@@ -39,9 +39,9 @@ async function resetPassword() {
     console.log(`\n✅ 密码设置成功！`);
     console.log(`   用户: ${result.rows[0].username}`);
     console.log(`   ID: ${result.rows[0].id}`);
-    console.log(`\n   登录地址: http://你的域名/admin`);
+    console.log(`\n   登录地址: http://你的域名/manage888`);
     console.log(`   账号: admin`);
-    console.log(`   密码: ${password}\n`);
+    console.log('   密码已更新（未输出到日志）\n');
   } finally {
     client.release();
     pool.end();

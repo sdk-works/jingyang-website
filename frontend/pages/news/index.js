@@ -3,7 +3,7 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import axios from 'axios';
 import Layout from '../../components/common/Layout';
-import { autoTranslate, langMap } from '../../utils/translate';
+import { useRouter } from 'next/router';
 
 const FALLBACK = [
   { id:'1', slug:'greenhouse-tech-2024',  category:'tech',     title:'温室农业智能化发展趋势分析',     summary:'随着物联网、人工智能技术的快速发展，智慧温室正成为现代农业的重要方向。本文深入分析当前温室智能化发展的关键技术与市场趋势。', content:'随着物联网、人工智能技术的快速发展，智慧温室正成为现代农业的重要方向。自动化控制系统、传感器网络和大数据分析正在改变传统温室种植方式，大幅提高了生产效率和资源利用率。\n\n根据市场研究数据，中国智能温室市场规模预计在未来五年内保持年均15%以上的增长。政府对现代农业设施的持续投入，以及新型农业经营主体的不断涌现，为行业发展提供了强劲动力。\n\n京阳温室科技在多年的发展中积累了丰富的智能温室建设经验，已为多个省份的种植基地提供了完整的智能化解决方案。', published_at:'2024-01-15', views:328 },
@@ -100,46 +100,16 @@ function ArticleModal({ article, onClose, t, getText }) {
 
 export default function NewsPage() {
   const { t } = useTranslation('common');
+  const { locale = 'zh' } = useRouter();
   const [articles, setArticles] = useState(FALLBACK);
   const [category, setCategory] = useState('all');
   const [selected, setSelected] = useState(null);
-  const [translated, setTranslated] = useState({});
-  const [mounted, setMounted] = useState(false);
-  const [lang, setLang] = useState('zh');
-
-  // 关键：从 localStorage 读取语言
   useEffect(() => {
-    setMounted(true);
-    setLang(localStorage.getItem('lang') || 'zh');
-  }, []);
+    axios.get('/api/articles', { params:{ lang:locale } })
+      .then(res => { if (res.data?.data?.length) setArticles(res.data.data); }).catch(() => {});
+  }, [locale]);
 
-  useEffect(() => {
-    axios.get('/api/articles').then(res => { if (res.data?.data?.length) setArticles(res.data.data); }).catch(() => {});
-  }, []);
-
-  // 自动翻译逻辑（与 localStorage 语言同步）
-  useEffect(() => {
-    if (!mounted) return;
-    if (lang === 'zh') { setTranslated({}); return; }
-    const target = langMap[lang] || 'en';
-    async function translateAll() {
-      const res = {};
-      for (const item of articles) {
-        res[item.id] = {
-          title: await autoTranslate(item.title, target),
-          summary: await autoTranslate(item.summary, target),
-          content: await autoTranslate(item.content, target),
-        };
-      }
-      setTranslated(res);
-    }
-    if (articles.length > 0) translateAll();
-  }, [lang, mounted, articles]);
-
-  const getText = (art, field) => {
-    if (lang === 'zh') return art[field];
-    return translated[art.id]?.[field] || art[field];
-  };
+  const getText = (art, field) => art[field];
 
   const cats = [
     { id:'all', label: t('news.all') },

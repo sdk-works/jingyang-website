@@ -17,17 +17,17 @@
  *   - 生产环境前端内存限制 400M
  *
  * 部署路径约定（与 Nginx 配置对应）：
- *   /var/www/greenhouse/backend/   ← 后端代码
- *   /var/www/greenhouse/frontend/  ← 前端代码
+ *   /var/www/jingyang-website/backend/   ← 后端代码
+ *   /var/www/jingyang-website/frontend/  ← 前端代码
  */
 
-const BASE = '/var/www/greenhouse';  // 修改此处以适配实际部署路径
+const BASE = '/var/www/jingyang-website';
 
 module.exports = {
   apps: [
     // ── 后端 API 服务 ──────────────────────────────────────
     {
-      name:          'greenhouse-backend',
+      name:          'jingyang-backend',
       cwd:           `${BASE}/backend`,
       script:        'server.js',
       interpreter:   'node',
@@ -43,7 +43,7 @@ module.exports = {
       // 环境变量
       env: {
         NODE_ENV: 'production',
-        PORT:     4000,
+        PORT:     4001,
       },
 
       // 日志
@@ -63,7 +63,7 @@ module.exports = {
 
     // ── 前端 Next.js 服务（standalone 模式，内存最优）──────
     {
-      name:          'greenhouse-frontend',
+      name:          'jingyang-frontend',
       cwd:           `${BASE}/frontend`,
       // standalone 模式启动命令（比 next start 内存低约 30-40%）
       script:        '.next/standalone/server.js',
