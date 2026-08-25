@@ -4,7 +4,7 @@
 
 ## 唯一主版本
 
-主版本目录：`/home/user/all_smart_greenhouse/greenhouse-website`
+主版本目录：`/home/user/projects/website/jingyang-website`
 
 选择依据：
 
@@ -19,8 +19,8 @@
 
 | 目录 | 状态 | 最近目录时间 | 处理原则 |
 |---|---|---:|---|
-| `/home/user/greenhouse-website` | 历史副本 A | 2026-03-14 | 只读保留，暂不删除 |
-| `/home/user/guanwang/greenhouse-website` | 历史副本 B | 2026-03-16 | 只读保留，暂不删除 |
+| `/home/user/archive/legacy-projects/greenhouse-website` | 历史副本 A | 2026-03-14 | 只读保留，暂不删除 |
+| `/home/user/archive/legacy-projects/guanwang/greenhouse-website` | 历史副本 B | 2026-03-16 | 只读保留，暂不删除 |
 
 历史副本仅用于差异追溯。确认主版本稳定且完成独立备份后，再决定是否压缩归档。
 
@@ -37,4 +37,3 @@
 - 后端：JavaScript 语法检查通过。
 - 已知构建警告：i18next 初始化方式冲突。
 - 未完成：数据库连接、接口联调、后台登录、邮件、上传和正式域名测试。
-
