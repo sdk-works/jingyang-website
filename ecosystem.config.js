@@ -65,8 +65,9 @@ module.exports = {
     {
       name:          'jingyang-frontend',
       cwd:           `${BASE}/frontend`,
-      // standalone 模式启动命令（比 next start 内存低约 30-40%）
-      script:        '.next/standalone/server.js',
+      // 使用已安装的 Next.js 启动生产构建
+      script:        'node_modules/next/dist/bin/next',
+      args:          'start -p 3000',
       interpreter:   'node',
 
       instances:     1,
