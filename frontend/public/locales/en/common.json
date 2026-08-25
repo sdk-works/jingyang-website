@@ -109,7 +109,9 @@
     "hours_label": "Business Hours",
     "service_area": "Service Area",
     "or_call": "Or call us directly",
-    "work_hours": "Mon–Sat 8:30–17:30"
+    "work_hours": "Mon–Sat 8:30–17:30",
+    "contact_hint": "Phone or email required",
+    "select": "Please select"
   },
   "cases": {
     "title": "Project Cases",

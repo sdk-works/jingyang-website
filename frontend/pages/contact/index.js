@@ -7,6 +7,7 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import axios from 'axios';
 import Layout from '../../components/common/Layout';
+import { useRouter } from 'next/router';
 
 const COMPANY = {
   address: '山东省聊城市莘县工业园区鸿图街8号',
@@ -20,8 +21,21 @@ const COMPANY = {
 
 const TYPES = ['文洛型玻璃温室','阳光板温室（PC板）','日光温室','薄膜连栋温室','单体拱棚','配套系统','设备配件','其他咨询'];
 
+const LOCAL_CONTACT = {
+  zh: { address: COMPANY.address, contact: '王静', hours: COMPANY.hours, serviceArea: COMPANY.serviceArea,
+    types: TYPES },
+  en: { address: 'No. 8 Hongtu Street, Shenxian Industrial Park, Liaocheng, Shandong, China', contact: 'Ms. Wang', hours: 'Monday–Saturday 08:30–17:30', serviceArea: 'Serving customers throughout China and international markets',
+    types: ['Venlo Glass Greenhouse','PC Panel Greenhouse','Solar Greenhouse','Multi-span Film Greenhouse','Single-span Tunnel','Supporting Systems','Equipment & Parts','Other Inquiry'] },
+  ru: { address: 'ул. Хунту, 8, промышленный парк Шэньсянь, Ляочэн, Шаньдун, Китай', contact: 'г-жа Ван', hours: 'Понедельник–суббота 08:30–17:30', serviceArea: 'Работаем по всему Китаю и на международных рынках',
+    types: ['Стеклянная теплица Venlo','Теплица из поликарбоната','Солнечная теплица','Многопролётная плёночная теплица','Однопролётный тоннель','Вспомогательные системы','Оборудование и комплектующие','Другой запрос'] },
+  ar: { address: 'رقم 8، شارع هونغتو، مجمع شينشيان الصناعي، لياوتشنغ، شاندونغ، الصين', contact: 'السيدة وانغ', hours: 'الاثنين–السبت 08:30–17:30', serviceArea: 'نخدم العملاء في جميع أنحاء الصين والأسواق الدولية',
+    types: ['دفيئة زجاجية فينلو','دفيئة ألواح بولي كربونات','دفيئة شمسية','دفيئة فيلمية متعددة البحور','نفق أحادي البحر','أنظمة مساندة','معدات وقطع غيار','استفسار آخر'] },
+};
+
 export default function ContactPage() {
   const { t } = useTranslation('common');
+  const { locale = 'zh' } = useRouter();
+  const localContact = LOCAL_CONTACT[locale] || LOCAL_CONTACT.en;
   const [form,   setForm]   = useState({ name:'', country:'', phone:'', email:'', greenhouse_type:'', area:'', message:'' });
   const [status, setStatus] = useState('idle'); // idle | loading | success | error
   const [errMsg, setErrMsg] = useState('');
@@ -66,11 +80,11 @@ export default function ContactPage() {
                 <p className="text-gray-500 text-sm leading-relaxed">{t('contact.form_subtitle')}</p>
               </div>
               {[
-                { icon:'📍', label:t('contact.address_label'), value:COMPANY.address },
-                { icon:'📞', label:t('contact.phone_label'), value:`${COMPANY.phone1}\n${COMPANY.phone2}（${COMPANY.contact}）`, href:`tel:${COMPANY.phone1.replace(/-/g,'')}` },
+                { icon:'📍', label:t('contact.address_label'), value:localContact.address },
+                { icon:'📞', label:t('contact.phone_label'), value:`${COMPANY.phone1}\n${COMPANY.phone2} (${localContact.contact})`, href:`tel:${COMPANY.phone1.replace(/-/g,'')}` },
                 { icon:'✉️', label:t('contact.email_label'), value:COMPANY.email, href:`mailto:${COMPANY.email}` },
-                { icon:'🕐', label:t('contact.hours_label'), value:COMPANY.hours },
-                { icon:'🗺️', label:t('contact.service_area'), value:COMPANY.serviceArea },
+                { icon:'🕐', label:t('contact.hours_label'), value:localContact.hours },
+                { icon:'🗺️', label:t('contact.service_area'), value:localContact.serviceArea },
               ].map(item => (
                 <div key={item.label} className="flex gap-4 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
                   <span className="text-xl flex-shrink-0 mt-0.5">{item.icon}</span>
@@ -115,7 +129,7 @@ export default function ContactPage() {
                       <input value={form.country} onChange={set('country')} placeholder={t('contact.country_placeholder')} className={inputCls}/>
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-1.5">{t('contact.phone')} <span className="text-orange-400 text-[10px]">与邮箱填一项</span></label>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1.5">{t('contact.phone')} <span className="text-orange-400 text-[10px]">{t('contact.contact_hint')}</span></label>
                       <input value={form.phone} onChange={set('phone')} placeholder={t('contact.phone_placeholder')} className={inputCls}/>
                     </div>
                     <div>
@@ -125,8 +139,8 @@ export default function ContactPage() {
                     <div>
                       <label className="block text-xs font-semibold text-gray-600 mb-1.5">{t('contact.greenhouse_type')}</label>
                       <select value={form.greenhouse_type} onChange={set('greenhouse_type')} className={inputCls}>
-                        <option value="">请选择</option>
-                        {TYPES.map(tp => <option key={tp} value={tp}>{tp}</option>)}
+                        <option value="">{t('contact.select')}</option>
+                        {localContact.types.map((label, index) => <option key={TYPES[index]} value={TYPES[index]}>{label}</option>)}
                       </select>
                     </div>
                     <div>
@@ -144,7 +158,7 @@ export default function ContactPage() {
                   <button onClick={handleSubmit} disabled={status === 'loading'}
                     className="w-full py-4 bg-primary-600 text-white rounded-xl font-bold text-sm hover:bg-primary-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {status === 'loading' ? t('contact.submitting') : status === 'error' ? `🔄 重新提交` : `🌿 ${t('contact.submit')}`}
+                    {status === 'loading' ? t('contact.submitting') : status === 'error' ? `🔄 ${t('contact.resubmit')}` : `🌿 ${t('contact.submit')}`}
                   </button>
                   <div className="text-center text-xs text-gray-400">
                     {t('contact.or_call')}：

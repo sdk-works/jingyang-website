@@ -109,7 +109,9 @@
     "hours_label": "服务时间",
     "service_area": "服务区域",
     "or_call": "或直接拨打",
-    "work_hours": "工作日 8:30-17:30"
+    "work_hours": "工作日 8:30-17:30",
+    "contact_hint": "与邮箱填一项",
+    "select": "请选择"
   },
   "cases": {
     "title": "工程案例",

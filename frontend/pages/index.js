@@ -3,6 +3,8 @@ import Layout from '../components/common/Layout';
 import Link from 'next/link';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useTranslation } from 'next-i18next';
+import { useRouter } from 'next/router';
+import { CASE_IMAGES, localizeCase } from '../utils/caseContent';
 
 const COMPANY = {
   phone1: '152-7589-8666',
@@ -26,20 +28,21 @@ export async function getStaticProps({ locale = 'zh' }) {
 
 export default function HomePage() {
   const { t } = useTranslation('common');
+  const { locale = 'zh' } = useRouter();
   const [showModal, setShowModal] = useState(false);
 
   const PRODUCTS = [
-    { slug: 'wenlo-glass', name: t('calculator.types.wenlo-glass'), icon: '🏗️', color: '#1565c0', price: 500 },
-    { slug: 'pc-panel', name: t('calculator.types.pc-panel'), icon: '☀️', color: '#2d6a4f', price: 350 },
-    { slug: 'solar-room', name: t('calculator.types.solar-room'), icon: '🌱', color: '#558b2f', price: 280 },
-    { slug: 'film-multispan', name: t('calculator.types.film-multispan'), icon: '🏛️', color: '#e65100', price: 200 },
+    { slug: 'wenlo-glass', name: t('calculator.types.wenlo-glass'), image: '/images/photo/产品技术/文洛型玻璃温室.jpg', price: 500 },
+    { slug: 'pc-panel', name: t('calculator.types.pc-panel'), image: '/images/photo/产品技术/阳光板温室.jpg', price: 350 },
+    { slug: 'solar-room', name: t('calculator.types.solar-room'), image: '/images/photo/产品技术/日光温室.jpg', price: 280 },
+    { slug: 'film-multispan', name: t('calculator.types.film-multispan'), image: '/images/photo/产品技术/薄膜连栋温室.jpg', price: 200 },
   ];
 
   const CASES = [
     { slug: 'shandong-sunrise-seed', title: '山东旭日种业有限公司', province: '山东省', type: '薄膜连栋温室', area: 8000 },
     { slug: 'liaocheng-ruitai', title: '聊城市瑞泰农产品基地', province: '山东聊城', type: '玻璃温室', area: 6000 },
     { slug: 'shaanxi-qianxian-veggie', title: '陕西乾县蔬菜基地', province: '陕西省', type: '日光温室', area: 5000 },
-  ];
+  ].map(item => localizeCase(item, locale));
 
   return (
     <Layout title={t('hero.title')}
@@ -79,9 +82,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {PRODUCTS.map(p => (
               <div key={p.slug} className="bg-white rounded-xl shadow p-4">
-                <div className="h-32 rounded-lg mb-3 flex items-center justify-center" style={{ background: p.color }}>
-                  <span className="text-3xl text-white">{p.icon}</span>
-                </div>
+                <AutoImg src={p.image} alt={p.name} fallbackIcon="🌿" className="h-32 w-full rounded-lg mb-3 object-cover" />
                 <h3 className="font-bold text-center">{p.name}</h3>
                   <p className="text-sm text-gray-500 text-center mt-1">{p.price} {t('common.cny')}/{t('common.sqm')}</p>
               </div>
@@ -97,9 +98,9 @@ export default function HomePage() {
             <h2 className="text-2xl font-bold">{t('cases.title')}</h2>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
-            {CASES.map(c => (
+            {CASES.map((c, index) => (
               <div key={c.slug} className="bg-gray-100 rounded-xl overflow-hidden">
-                <div className="h-40 bg-gray-200"></div>
+                <AutoImg src={CASE_IMAGES[index]} alt={c.title} fallbackIcon="🏡" className="h-40 w-full object-cover" />
                 <div className="p-4">
                   <h3 className="font-bold">{c.title}</h3>
                   <p className="text-xs text-gray-500 mt-1">{c.province} | {c.type} | {c.area}㎡</p>

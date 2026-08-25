@@ -4,6 +4,12 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import axios from 'axios';
 import Layout from '../../components/common/Layout';
 import { useRouter } from 'next/router';
+import { CASE_IMAGES, localizeCase } from '../../utils/caseContent';
+
+function CaseImage({ src, fallback, alt }) {
+  const [failed, setFailed] = useState(false);
+  return <img src={!failed && src ? src : fallback} alt={alt} onError={() => setFailed(true)} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"/>;
+}
 
 export default function CasesPage() {
   const { t } = useTranslation('common');
@@ -42,21 +48,23 @@ export default function CasesPage() {
             <div className="text-center py-20 text-gray-400">{t('common.empty')}</div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {list.map(item => (
+              {list.map((rawItem, index) => {
+                const item = localizeCase(rawItem, locale);
+                return (
                 <div key={item.id} className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
                   <div className="aspect-[4/3] overflow-hidden bg-gray-100">
-                    <img src={item.cover || '/images/default-case.jpg'} alt={getCaseText(item, 'title')} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"/>
+                    <CaseImage src={item.cover} fallback={CASE_IMAGES[index % CASE_IMAGES.length]} alt={getCaseText(item, 'title')}/>
                   </div>
                   <div className="p-5">
                     <h3 className="font-bold text-gray-900 text-base mb-2 line-clamp-1">{getCaseText(item, 'title')}</h3>
                     <p className="text-xs text-gray-500 mb-2">📍 {getCaseText(item, 'address')}</p>
                     <p className="text-sm text-gray-500 line-clamp-2 min-h-[40px]">{getCaseText(item, 'desc')}</p>
                     <div className="mt-4">
-                      <a href={`/cases/${item.slug}`} className="text-primary-600 text-sm font-medium hover:underline">{t('common.view_detail')} →</a>
+                      <a href={`/cases/${item.slug}`} className="text-primary-600 text-sm font-medium hover:underline">{t('common.details')} →</a>
                     </div>
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
           )}
         </div>
