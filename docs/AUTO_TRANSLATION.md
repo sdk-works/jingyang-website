@@ -8,7 +8,20 @@
 
 ## 翻译服务配置
 
-后端支持 OpenAI Chat Completions 兼容接口，可连接云端服务或本地模型网关：
+### 当前虚拟机：离线 Argos
+
+当前部署使用只监听 `127.0.0.1:5000` 的 Argos 服务，不产生API费用：
+
+```env
+TRANSLATION_PROVIDER=argos
+TRANSLATION_API_URL=http://127.0.0.1:5000
+```
+
+服务由 systemd 管理：`sudo systemctl status argos-translator`。中译俄和中译阿通过英语中转，适合自动生成初稿，正式发布前仍建议人工抽查专业术语。
+
+### 云服务器：OpenAI兼容接口
+
+后端也支持 OpenAI Chat Completions 兼容接口，可连接云端服务或本地模型网关：
 
 ```env
 TRANSLATION_API_URL=https://example.com/v1

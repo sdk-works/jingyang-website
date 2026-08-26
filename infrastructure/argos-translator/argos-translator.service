@@ -1,0 +1,16 @@
+[Unit]
+Description=Jingyang offline Argos translation service
+After=network.target
+
+[Service]
+Type=simple
+User=user
+WorkingDirectory=/home/user/services/argos-translator
+ExecStart=/home/user/services/argos-translator/venv/bin/python /home/user/services/argos-translator/server.py
+Restart=on-failure
+RestartSec=5
+Environment=ARGOS_DEVICE_TYPE=cpu
+MemoryMax=1500M
+
+[Install]
+WantedBy=multi-user.target

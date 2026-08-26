@@ -45,6 +45,8 @@ module.exports = {
         NODE_ENV: 'production',
         PORT:     4001,
         CORS_ORIGIN: 'http://localhost:3000,http://127.0.0.1:3000,http://192.168.109.128:3000',
+        TRANSLATION_PROVIDER: 'argos',
+        TRANSLATION_API_URL: 'http://127.0.0.1:5000',
       },
 
       // 日志

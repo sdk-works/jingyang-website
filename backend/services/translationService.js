@@ -9,6 +9,8 @@ const TABLES = {
 };
 
 function configured() {
+  const provider = process.env.TRANSLATION_PROVIDER || 'openai_compatible';
+  if (provider === 'argos') return Boolean(process.env.TRANSLATION_API_URL);
   return Boolean(process.env.TRANSLATION_API_URL && process.env.TRANSLATION_MODEL);
 }
 
@@ -59,6 +61,29 @@ function safeJson(text) {
 async function callProvider(source, targetLang) {
   if (!configured()) throw new Error('Translation provider is not configured');
   const base = process.env.TRANSLATION_API_URL.replace(/\/$/, '');
+  if ((process.env.TRANSLATION_PROVIDER || '') === 'argos') {
+    const translateText = async (value) => {
+      if (!value || typeof value !== 'string' || !/[\u3400-\u9fff]/.test(value)) return value;
+      // 富文本按HTML标签切分，只翻译可见文字，避免破坏标签和链接。
+      const parts = value.split(/(<[^>]+>)/g);
+      for (let i=0; i<parts.length; i++) {
+        if (!parts[i] || parts[i].startsWith('<') || !/[\u3400-\u9fff]/.test(parts[i])) continue;
+        const response = await fetch(`${base}/translate`, { method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ q:parts[i], source:'zh', target:targetLang }) });
+        if (!response.ok) throw new Error(`Argos HTTP ${response.status}`);
+        const data = await response.json();
+        parts[i] = data.translatedText;
+      }
+      return parts.join('');
+    };
+    const result = {};
+    for (const [key,value] of Object.entries(source)) {
+      result[key] = Array.isArray(value)
+        ? await Promise.all(value.map(translateText))
+        : await translateText(value);
+    }
+    return result;
+  }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), Number(process.env.TRANSLATION_TIMEOUT_MS || 45000));
   const system = `You are a professional greenhouse-industry translator. Translate Chinese JSON values into ${targetLang}. Preserve JSON keys, arrays, HTML tags, URLs, numbers and units. Return JSON only. Use consistent technical terminology.`;
