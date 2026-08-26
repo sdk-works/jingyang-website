@@ -82,5 +82,10 @@ CREATE TABLE IF NOT EXISTS translation_jobs (
 );
 CREATE INDEX IF NOT EXISTS idx_translation_jobs_status ON translation_jobs(status, updated_at);
 
+-- 人工译文锁定，防止自动补译覆盖人工修订
+ALTER TABLE product_translations ADD COLUMN IF NOT EXISTS is_locked BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE case_translations ADD COLUMN IF NOT EXISTS is_locked BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE article_translations ADD COLUMN IF NOT EXISTS is_locked BOOLEAN NOT NULL DEFAULT false;
+
 -- ── 完成 ─────────────────────────────────────────────────
 DO $$ BEGIN RAISE NOTICE '✅ 数据库迁移完成！'; END $$;

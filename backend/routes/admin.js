@@ -225,7 +225,9 @@ router.get('/products', authenticate, async (req, res) => {
       SELECT p.id, p.slug, p.category, p.cover_image, p.video_url, p.price_per_sqm,
              p.sort_order, p.is_active, p.created_at,
              pt.name, pt.description,
-             pt.features::text AS features_raw
+             pt.features::text AS features_raw,
+             COALESCE((SELECT jsonb_object_agg(x.lang,jsonb_build_object('name',x.name,'description',x.description,'features',x.features,'is_locked',x.is_locked))
+               FROM product_translations x WHERE x.product_id=p.id),'{}'::jsonb) AS translations
       FROM products p
       LEFT JOIN product_translations pt ON p.id=pt.product_id AND pt.lang='zh'
       ${where}
@@ -258,10 +260,10 @@ router.post('/products', authenticate, requireRole(ROLES.EDIT), async (req, res)
         const feats = Array.isArray(t.features) ? t.features
           : (t.features||'').split('\n').filter(Boolean);
         await query(
-          `INSERT INTO product_translations(product_id,lang,name,description,features)
-           VALUES($1,$2,$3,$4,$5) ON CONFLICT(product_id,lang)
-           DO UPDATE SET name=$3,description=$4,features=$5`,
-          [pid, t.lang||'zh', t.name||'', t.description||'', JSON.stringify(feats)]
+          `INSERT INTO product_translations(product_id,lang,name,description,features,is_locked)
+           VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(product_id,lang)
+           DO UPDATE SET name=$3,description=$4,features=$5,is_locked=$6`,
+          [pid, t.lang||'zh', t.name||'', t.description||'', JSON.stringify(feats), t.lang==='zh' ? false : Boolean(t.is_locked)]
         );
       }
     }
@@ -285,10 +287,10 @@ router.put('/products/:id', authenticate, requireRole(ROLES.EDIT), async (req, r
         const feats = Array.isArray(t.features) ? t.features
           : (t.features||'').split('\n').filter(Boolean);
         await query(
-          `INSERT INTO product_translations(product_id,lang,name,description,features)
-           VALUES($1,$2,$3,$4,$5) ON CONFLICT(product_id,lang)
-           DO UPDATE SET name=$3,description=$4,features=$5`,
-          [req.params.id, t.lang||'zh', t.name||'', t.description||'', JSON.stringify(feats)]
+          `INSERT INTO product_translations(product_id,lang,name,description,features,is_locked)
+           VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(product_id,lang)
+           DO UPDATE SET name=$3,description=$4,features=$5,is_locked=$6`,
+          [req.params.id, t.lang||'zh', t.name||'', t.description||'', JSON.stringify(feats), t.lang==='zh' ? false : Boolean(t.is_locked)]
         );
       }
     }
@@ -317,7 +319,9 @@ router.get('/cases', authenticate, async (req, res) => {
       SELECT c.id, c.slug, c.country, c.province, c.area, c.greenhouse_type,
              c.cover_image, c.images, c.video_url, c.completion_date,
              c.sort_order, c.is_active, c.created_at,
-             ct.title, ct.description
+             ct.title, ct.description,
+             COALESCE((SELECT jsonb_object_agg(x.lang,jsonb_build_object('title',x.title,'description',x.description,'is_locked',x.is_locked))
+               FROM case_translations x WHERE x.case_id=c.id),'{}'::jsonb) AS translations
       FROM cases c
       LEFT JOIN case_translations ct ON c.id=ct.case_id AND ct.lang='zh'
       ${where}
@@ -343,9 +347,9 @@ router.post('/cases', authenticate, requireRole(ROLES.EDIT), async (req, res) =>
         : Object.entries(translations).map(([lang,d]) => ({lang,...d}));
       for (const t of arr) {
         await query(
-          `INSERT INTO case_translations(case_id,lang,title,description) VALUES($1,$2,$3,$4)
-           ON CONFLICT(case_id,lang) DO UPDATE SET title=$3,description=$4`,
-          [cid, t.lang||'zh', t.title||'', t.description||'']
+          `INSERT INTO case_translations(case_id,lang,title,description,is_locked) VALUES($1,$2,$3,$4,$5)
+           ON CONFLICT(case_id,lang) DO UPDATE SET title=$3,description=$4,is_locked=$5`,
+          [cid, t.lang||'zh', t.title||'', t.description||'', t.lang==='zh' ? false : Boolean(t.is_locked)]
         );
       }
     }
@@ -367,9 +371,9 @@ router.put('/cases/:id', authenticate, requireRole(ROLES.EDIT), async (req, res)
         : Object.entries(translations).map(([lang,d]) => ({lang,...d}));
       for (const t of arr) {
         await query(
-          `INSERT INTO case_translations(case_id,lang,title,description) VALUES($1,$2,$3,$4)
-           ON CONFLICT(case_id,lang) DO UPDATE SET title=$3,description=$4`,
-          [req.params.id, t.lang||'zh', t.title||'', t.description||'']
+          `INSERT INTO case_translations(case_id,lang,title,description,is_locked) VALUES($1,$2,$3,$4,$5)
+           ON CONFLICT(case_id,lang) DO UPDATE SET title=$3,description=$4,is_locked=$5`,
+          [req.params.id, t.lang||'zh', t.title||'', t.description||'', t.lang==='zh' ? false : Boolean(t.is_locked)]
         );
       }
     }
@@ -395,7 +399,9 @@ router.get('/articles', authenticate, async (req, res) => {
     const { rows } = await query(`
       SELECT a.id, a.slug, a.cover_image, a.video_url, a.category,
              a.is_published, a.published_at, a.view_count, a.created_at,
-             at.title, at.summary, at.content
+             at.title, at.summary, at.content,
+             COALESCE((SELECT jsonb_object_agg(x.lang,jsonb_build_object('title',x.title,'summary',x.summary,'content',x.content,'is_locked',x.is_locked))
+               FROM article_translations x WHERE x.article_id=a.id),'{}'::jsonb) AS translations
       FROM articles a
       LEFT JOIN article_translations at ON a.id=at.article_id AND at.lang='zh'
       ORDER BY a.created_at DESC`
@@ -418,9 +424,9 @@ router.post('/articles', authenticate, requireRole(ROLES.EDIT), async (req, res)
         : Object.entries(translations).map(([lang,d]) => ({lang,...d}));
       for (const t of arr) {
         await query(
-          `INSERT INTO article_translations(article_id,lang,title,summary,content) VALUES($1,$2,$3,$4,$5)
-           ON CONFLICT(article_id,lang) DO UPDATE SET title=$3,summary=$4,content=$5`,
-          [aid, t.lang||'zh', t.title||'', t.summary||'', t.content||'']
+          `INSERT INTO article_translations(article_id,lang,title,summary,content,is_locked) VALUES($1,$2,$3,$4,$5,$6)
+           ON CONFLICT(article_id,lang) DO UPDATE SET title=$3,summary=$4,content=$5,is_locked=$6`,
+          [aid, t.lang||'zh', t.title||'', t.summary||'', t.content||'', t.lang==='zh' ? false : Boolean(t.is_locked)]
         );
       }
     }
@@ -442,9 +448,9 @@ router.put('/articles/:id', authenticate, requireRole(ROLES.EDIT), async (req, r
         : Object.entries(translations).map(([lang,d]) => ({lang,...d}));
       for (const t of arr) {
         await query(
-          `INSERT INTO article_translations(article_id,lang,title,summary,content) VALUES($1,$2,$3,$4,$5)
-           ON CONFLICT(article_id,lang) DO UPDATE SET title=$3,summary=$4,content=$5`,
-          [req.params.id, t.lang||'zh', t.title||'', t.summary||'', t.content||'']
+          `INSERT INTO article_translations(article_id,lang,title,summary,content,is_locked) VALUES($1,$2,$3,$4,$5,$6)
+           ON CONFLICT(article_id,lang) DO UPDATE SET title=$3,summary=$4,content=$5,is_locked=$6`,
+          [req.params.id, t.lang||'zh', t.title||'', t.summary||'', t.content||'', t.lang==='zh' ? false : Boolean(t.is_locked)]
         );
       }
     }

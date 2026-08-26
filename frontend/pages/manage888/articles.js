@@ -6,8 +6,9 @@ import { useState, useEffect, useRef } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import axios from 'axios';
 import TranslationPanel from '../../components/admin/TranslationPanel';
+import TranslationEditor from '../../components/admin/TranslationEditor';
 
-const EMPTY = { title:'', category:'industry', summary:'', content:'', cover_image:'', video_url:'', is_published:true };
+const EMPTY = { title:'', category:'industry', summary:'', content:'', cover_image:'', video_url:'', is_published:true, translations:{} };
 
 function ImageUploader({ value, onChange, auth }) {
   const [uploading, setUploading] = useState(false);
@@ -154,7 +155,10 @@ export default function AdminArticles() {
         video_url:    form.video_url   || '',
         category:     form.category,
         is_published: form.is_published,
-        translations: [{ lang:'zh', title: form.title, summary: form.summary||'', content: form.content||'' }],
+        translations: [
+          { lang:'zh', title: form.title, summary: form.summary||'', content: form.content||'' },
+          ...['en','ru','ar'].filter(lang => form.translations?.[lang]).map(lang => ({lang,...form.translations[lang]}))
+        ],
       };
       if (modal === 'add') {
         payload.slug = form.title.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g,'-').toLowerCase().slice(0,50)+'-'+Date.now();
@@ -284,6 +288,8 @@ export default function AdminArticles() {
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">视频链接 <span className="text-gray-400 font-normal">（可选，填入视频URL）</span></label>
                 <input value={form.video_url||''} onChange={e => setForm(f=>({...f,video_url:e.target.value}))} placeholder="https://..." className={inputCls}/>
               </div>
+              <TranslationEditor value={form.translations} onChange={translations=>setForm(f=>({...f,translations}))}
+                fields={[{key:'title',label:'文章标题'},{key:'summary',label:'摘要',multiline:true},{key:'content',label:'正文',multiline:true,rows:8}]}/>
               {err && <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-600">⚠️ {err}</div>}
               <div className="flex gap-3 pt-2">
                 <button onClick={() => setModal(null)} className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50">取消</button>

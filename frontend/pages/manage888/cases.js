@@ -6,8 +6,9 @@ import { useState, useEffect, useRef } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import axios from 'axios';
 import TranslationPanel from '../../components/admin/TranslationPanel';
+import TranslationEditor from '../../components/admin/TranslationEditor';
 
-const EMPTY = { title:'', province:'', area:'', greenhouse_type:'', completion_date:'', description:'', is_active:true, cover_image:'' };
+const EMPTY = { title:'', province:'', area:'', greenhouse_type:'', completion_date:'', description:'', is_active:true, cover_image:'', translations:{} };
 const TYPES = ['文洛型玻璃温室','阳光板温室（PC板）','日光温室','薄膜连栋温室','单体拱棚'];
 
 function ImageUploader({ value, onChange, auth }) {
@@ -79,7 +80,10 @@ export default function AdminCases() {
         province: form.province, area: form.area ? Number(form.area) : null,
         greenhouse_type: form.greenhouse_type, cover_image: form.cover_image || '',
         completion_date: form.completion_date || null, is_active: form.is_active,
-        translations: [{ lang:'zh', title: form.title, description: form.description||'' }],
+        translations: [
+          { lang:'zh', title: form.title, description: form.description||'' },
+          ...['en','ru','ar'].filter(lang => form.translations?.[lang]).map(lang => ({lang,...form.translations[lang]}))
+        ],
       };
       if (modal === 'add') {
         payload.slug = Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6);
@@ -201,6 +205,8 @@ export default function AdminCases() {
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">项目描述</label>
                 <textarea value={form.description} onChange={set('description')} rows={4} placeholder="项目详情、建设内容、客户反馈..." className={`${inputCls} resize-y`}/>
               </div>
+              <TranslationEditor value={form.translations} onChange={translations=>setForm(f=>({...f,translations}))}
+                fields={[{key:'title',label:'案例名称'},{key:'description',label:'案例描述',multiline:true,rows:4}]}/>
               {err && <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-600">⚠️ {err}</div>}
               <div className="flex gap-3 pt-2">
                 <button onClick={() => setModal(null)} className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50">取消</button>

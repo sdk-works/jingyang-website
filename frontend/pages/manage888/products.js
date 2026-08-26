@@ -7,10 +7,11 @@ import { useState, useEffect, useRef } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import axios from 'axios';
 import TranslationPanel from '../../components/admin/TranslationPanel';
+import TranslationEditor from '../../components/admin/TranslationEditor';
 
 const CATS = ['tech','system','parts'];
 const CAT_LABELS = { tech:'产品技术', system:'配套系统', parts:'设备配件' };
-const EMPTY = { name:'', slug:'', category:'tech', description:'', features:'', price_per_sqm:'', is_active:true, cover_image:'' };
+const EMPTY = { name:'', slug:'', category:'tech', description:'', features:'', price_per_sqm:'', is_active:true, cover_image:'', translations:{} };
 
 // 图片上传组件
 function ImageUploader({ value, onChange, auth }) {
@@ -97,7 +98,8 @@ export default function AdminProducts() {
   const openEdit = (p) => {
     // 修复：后端现在直接返回 name/description/features，不再需要从 translations 数组解析
     const feats = Array.isArray(p.features) ? p.features.join('\n') : (p.features || '');
-    setForm({ ...p, features: feats, price_per_sqm: p.price_per_sqm || '' });
+    const translations = Object.fromEntries(Object.entries(p.translations||{}).map(([lang,t]) => [lang,{...t,features:Array.isArray(t.features)?t.features.join('\n'):(t.features||'')}]))
+    setForm({ ...p, translations, features: feats, price_per_sqm: p.price_per_sqm || '' });
     setErr('');
     setModal('edit');
   };
@@ -113,7 +115,11 @@ export default function AdminProducts() {
         price_per_sqm: form.price_per_sqm ? Number(form.price_per_sqm) : 0,
         cover_image: form.cover_image || '',
         is_active: form.is_active,
-        translations: [{ lang:'zh', name: form.name, description: form.description||'', features: featureArr }],
+        translations: [
+          { lang:'zh', name: form.name, description: form.description||'', features: featureArr },
+          ...['en','ru','ar'].filter(lang => form.translations?.[lang]).map(lang => ({ lang, ...form.translations[lang],
+            features:(form.translations[lang].features||'').split('\n').filter(Boolean) }))
+        ],
       };
       if (modal === 'add') {
         payload.slug = form.name.replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\u4e00-\u9fa5-]/g,'').toLowerCase() + '-' + Date.now();
@@ -265,6 +271,8 @@ export default function AdminProducts() {
                   placeholder={"热镀锌钢骨架，耐久抗腐\n透光率>97%，采光极佳\n..."}
                   className={`${inputCls} resize-y font-mono text-xs`}/>
               </div>
+              <TranslationEditor value={form.translations} onChange={translations=>setForm(f=>({...f,translations}))}
+                fields={[{key:'name',label:'产品名称'},{key:'description',label:'产品描述',multiline:true},{key:'features',label:'产品特点（每行一项）',multiline:true}]}/>
               {err && <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-600">⚠️ {err}</div>}
               <div className="flex gap-3 pt-2">
                 <button onClick={() => setModal(null)} className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50">取消</button>

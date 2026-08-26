@@ -1,0 +1,3 @@
+ALTER TABLE product_translations ADD COLUMN IF NOT EXISTS is_locked BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE case_translations ADD COLUMN IF NOT EXISTS is_locked BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE article_translations ADD COLUMN IF NOT EXISTS is_locked BOOLEAN NOT NULL DEFAULT false;

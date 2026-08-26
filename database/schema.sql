@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS product_translations (
   description TEXT,
   features    JSONB,
   specs       JSONB,
+  is_locked   BOOLEAN NOT NULL DEFAULT false,
   created_at  TIMESTAMP DEFAULT NOW(),
   UNIQUE(product_id, lang)
 );
@@ -94,6 +95,7 @@ CREATE TABLE IF NOT EXISTS case_translations (
   title       VARCHAR(300) NOT NULL,
   description TEXT,
   highlights  JSONB,
+  is_locked   BOOLEAN NOT NULL DEFAULT false,
   created_at  TIMESTAMP DEFAULT NOW(),
   UNIQUE(case_id, lang)
 );
@@ -123,6 +125,7 @@ CREATE TABLE IF NOT EXISTS article_translations (
   content          TEXT,
   meta_title       VARCHAR(200),
   meta_description VARCHAR(300),
+  is_locked        BOOLEAN NOT NULL DEFAULT false,
   created_at       TIMESTAMP DEFAULT NOW(),
   UNIQUE(article_id, lang)
 );

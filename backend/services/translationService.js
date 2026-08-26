@@ -103,15 +103,18 @@ async function callProvider(source, targetLang) {
 async function saveTranslation(entityType, entityId, lang, translated) {
   if (entityType === 'product') {
     const features = Array.isArray(translated.features) ? translated.features : [];
-    return query(`INSERT INTO product_translations(product_id,lang,name,description,features)
-      VALUES($1,$2,$3,$4,$5) ON CONFLICT(product_id,lang) DO UPDATE SET name=$3,description=$4,features=$5`,
+    return query(`INSERT INTO product_translations(product_id,lang,name,description,features,is_locked)
+      VALUES($1,$2,$3,$4,$5,false) ON CONFLICT(product_id,lang) DO UPDATE SET name=$3,description=$4,features=$5
+      WHERE product_translations.is_locked=false`,
       [entityId,lang,translated.name||'',translated.description||'',JSON.stringify(features)]);
   }
-  if (entityType === 'case') return query(`INSERT INTO case_translations(case_id,lang,title,description)
-    VALUES($1,$2,$3,$4) ON CONFLICT(case_id,lang) DO UPDATE SET title=$3,description=$4`,
+  if (entityType === 'case') return query(`INSERT INTO case_translations(case_id,lang,title,description,is_locked)
+    VALUES($1,$2,$3,$4,false) ON CONFLICT(case_id,lang) DO UPDATE SET title=$3,description=$4
+    WHERE case_translations.is_locked=false`,
     [entityId,lang,translated.title||'',translated.description||'']);
-  return query(`INSERT INTO article_translations(article_id,lang,title,summary,content)
-    VALUES($1,$2,$3,$4,$5) ON CONFLICT(article_id,lang) DO UPDATE SET title=$3,summary=$4,content=$5`,
+  return query(`INSERT INTO article_translations(article_id,lang,title,summary,content,is_locked)
+    VALUES($1,$2,$3,$4,$5,false) ON CONFLICT(article_id,lang) DO UPDATE SET title=$3,summary=$4,content=$5
+    WHERE article_translations.is_locked=false`,
     [entityId,lang,translated.title||'',translated.summary||'',translated.content||'']);
 }
 

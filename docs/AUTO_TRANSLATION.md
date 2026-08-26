@@ -19,6 +19,8 @@ TRANSLATION_API_URL=http://127.0.0.1:5000
 
 服务由 systemd 管理：`sudo systemctl status argos-translator`。中译俄和中译阿通过英语中转，适合自动生成初稿，正式发布前仍建议人工抽查专业术语。
 
+管理后台的产品、案例和内容编辑窗口均可切换英语、俄语和阿拉伯语。人工修订后勾选“锁定该语言的人工译文”，后续中文更新和自动补译不会覆盖该译文。
+
 ### 云服务器：OpenAI兼容接口
 
 后端也支持 OpenAI Chat Completions 兼容接口，可连接云端服务或本地模型网关：
