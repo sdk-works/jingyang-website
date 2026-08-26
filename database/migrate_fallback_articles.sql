@@ -13,5 +13,5 @@ WITH source(slug,category,title,summary,published_at,view_count) AS (VALUES
 )
 INSERT INTO article_translations(article_id,lang,title,summary,content,is_locked)
 SELECT a.id,'zh',s.title,s.summary,s.summary,false
-FROM source s JOIN articles a ON a.slug=s.slug
+FROM source s JOIN inserted a ON a.slug=s.slug
 ON CONFLICT(article_id,lang) DO NOTHING;
