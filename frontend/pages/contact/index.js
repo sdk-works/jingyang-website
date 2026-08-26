@@ -2,7 +2,7 @@
  * 联系我们页 /contact
  * 多语言: useTranslation
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import axios from 'axios';
@@ -36,6 +36,12 @@ export default function ContactPage() {
   const { t } = useTranslation('common');
   const { locale = 'zh' } = useRouter();
   const localContact = LOCAL_CONTACT[locale] || LOCAL_CONTACT.en;
+  const [site,setSite]=useState({});
+  useEffect(()=>{ axios.get('/api/settings').then(r=>setSite(r.data?.data||{})).catch(()=>{}); },[]);
+  const displayContact = locale==='zh' ? { ...localContact, address:site.company_address||localContact.address,
+    contact:site.company_contact||localContact.contact, hours:site.working_hours||localContact.hours,
+    serviceArea:site.service_area||localContact.serviceArea } : localContact;
+  const phone1=site.company_phone||COMPANY.phone1, phone2=site.company_phone2||COMPANY.phone2;
   const [form,   setForm]   = useState({ name:'', country:'', phone:'', email:'', greenhouse_type:'', area:'', message:'' });
   const [status, setStatus] = useState('idle'); // idle | loading | success | error
   const [errMsg, setErrMsg] = useState('');
@@ -80,11 +86,11 @@ export default function ContactPage() {
                 <p className="text-gray-500 text-sm leading-relaxed">{t('contact.form_subtitle')}</p>
               </div>
               {[
-                { icon:'📍', label:t('contact.address_label'), value:localContact.address },
-                { icon:'📞', label:t('contact.phone_label'), value:`${COMPANY.phone1}\n${COMPANY.phone2} (${localContact.contact})`, href:`tel:${COMPANY.phone1.replace(/-/g,'')}` },
+                { icon:'📍', label:t('contact.address_label'), value:displayContact.address },
+                { icon:'📞', label:t('contact.phone_label'), value:`${phone1}\n${phone2} (${displayContact.contact})`, href:`tel:${phone1.replace(/-/g,'')}` },
                 { icon:'✉️', label:t('contact.email_label'), value:COMPANY.email, href:`mailto:${COMPANY.email}` },
-                { icon:'🕐', label:t('contact.hours_label'), value:localContact.hours },
-                { icon:'🗺️', label:t('contact.service_area'), value:localContact.serviceArea },
+                { icon:'🕐', label:t('contact.hours_label'), value:displayContact.hours },
+                { icon:'🗺️', label:t('contact.service_area'), value:displayContact.serviceArea },
               ].map(item => (
                 <div key={item.label} className="flex gap-4 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
                   <span className="text-xl flex-shrink-0 mt-0.5">{item.icon}</span>

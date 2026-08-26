@@ -10,14 +10,14 @@ import TranslationEditor from '../../components/admin/TranslationEditor';
 
 const EMPTY = { title:'', category:'industry', summary:'', content:'', cover_image:'', video_url:'', is_published:true, translations:{} };
 
-function ImageUploader({ value, onChange, auth }) {
+function ImageUploader({ value, onChange, auth, entityId, entityName }) {
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef();
   const upload = async (file) => {
     if (!file) return;
     setUploading(true);
     try {
-      const fd = new FormData(); fd.append('file', file);
+      const fd = new FormData(); fd.append('file', file); fd.append('entity_type','articles'); fd.append('entity_id',entityId||''); fd.append('entity_name',entityName||'');
       const { data } = await axios.post('/api/admin/upload', fd, { headers: auth() });
       onChange(data.url);
     } catch (e) { alert(e.response?.data?.error || '上传失败'); }
@@ -267,7 +267,7 @@ export default function AdminArticles() {
                   </select>
                 </div>
               </div>
-              <ImageUploader value={form.cover_image} onChange={v => setForm(f=>({...f,cover_image:v}))} auth={auth}/>
+              <ImageUploader value={form.cover_image} onChange={v => setForm(f=>({...f,cover_image:v}))} auth={auth} entityId={form.id} entityName={form.title}/>
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">文章摘要 <span className="text-gray-400 font-normal">（显示在列表页）</span></label>
                 <textarea value={form.summary} onChange={e => setForm(f=>({...f,summary:e.target.value}))} rows={2} placeholder="简短描述，约100字以内" className={`${inputCls} resize-none`}/>

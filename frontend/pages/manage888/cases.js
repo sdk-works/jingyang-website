@@ -11,14 +11,14 @@ import TranslationEditor from '../../components/admin/TranslationEditor';
 const EMPTY = { title:'', province:'', area:'', greenhouse_type:'', completion_date:'', description:'', is_active:true, cover_image:'', translations:{} };
 const TYPES = ['文洛型玻璃温室','阳光板温室（PC板）','日光温室','薄膜连栋温室','单体拱棚'];
 
-function ImageUploader({ value, onChange, auth }) {
+function ImageUploader({ value, onChange, auth, entityId, entityName }) {
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef();
   const upload = async (file) => {
     if (!file) return;
     setUploading(true);
     try {
-      const fd = new FormData(); fd.append('file', file);
+      const fd = new FormData(); fd.append('file', file); fd.append('entity_type','cases'); fd.append('entity_id',entityId||''); fd.append('entity_name',entityName||'');
       const { data } = await axios.post('/api/admin/upload', fd, { headers: auth() });
       onChange(data.url);
     } catch (e) { alert(e.response?.data?.error || '上传失败'); }
@@ -200,7 +200,7 @@ export default function AdminCases() {
                   <input value={form.completion_date} onChange={set('completion_date')} type="date" className={inputCls}/>
                 </div>
               </div>
-              <ImageUploader value={form.cover_image} onChange={v => setForm(f=>({...f,cover_image:v}))} auth={auth}/>
+              <ImageUploader value={form.cover_image} onChange={v => setForm(f=>({...f,cover_image:v}))} auth={auth} entityId={form.id} entityName={form.title}/>
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">项目描述</label>
                 <textarea value={form.description} onChange={set('description')} rows={4} placeholder="项目详情、建设内容、客户反馈..." className={`${inputCls} resize-y`}/>

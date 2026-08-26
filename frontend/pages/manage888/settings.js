@@ -27,6 +27,7 @@ export default function AdminSettings() {
   const [saving,  setSaving]  = useState(false);
   const [saved,   setSaved]   = useState(false);
   const [loading, setLoading] = useState(true);
+  const [company,setCompany]=useState({company_name:'山东京阳温室科技有限公司',company_phone:'152-7589-8666',company_phone2:'152-7589-8779',company_contact:'王静',company_email:'jingyangwenshikeji@163.com',company_address:'山东省聊城市莘县工业园区鸿图街8号',working_hours:'周一至周六 08:30 – 17:30',service_area:'山东、河南、河北、东北、山西、陕西、江苏、安徽等全国各地'});
 
   const auth = () => ({ Authorization: `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('admin_token') : ''}` });
 
@@ -35,6 +36,7 @@ export default function AdminSettings() {
       if (res.data?.base_prices)  setBasePrices(p  => ({ ...p,  ...res.data.base_prices  }));
       if (res.data?.addon_prices) setAddonPrices(p => ({ ...p,  ...res.data.addon_prices }));
     }).catch(() => {}).finally(() => setLoading(false));
+    axios.get('/api/admin/site-settings',{headers:auth()}).then(r=>setCompany(x=>({...x,...r.data.data}))).catch(()=>{});
   }, []);
 
   const saveRules = async () => {
@@ -53,6 +55,7 @@ export default function AdminSettings() {
 
   const setBase  = (k, v) => setBasePrices(p  => ({ ...p,  [k]: Number(v) || 0 }));
   const setAddon = (k, v) => setAddonPrices(p => ({ ...p,  [k]: Number(v) || 0 }));
+  const saveCompany=async()=>{setSaving(true);try{await axios.put('/api/admin/site-settings',company,{headers:auth()});alert('公司信息保存成功');}catch(e){alert(e.response?.data?.error||'保存失败')}setSaving(false)};
 
   if (loading) return <AdminLayout title="系统设置"><div className="py-20 text-center text-gray-400">加载中...</div></AdminLayout>;
 
@@ -118,24 +121,12 @@ export default function AdminSettings() {
           </div>
         </div>
 
-        {/* 公司信息（只读提示） */}
+        {/* 公司信息 */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
           <h2 className="text-base font-bold text-gray-900 mb-1">公司基本信息</h2>
-          <p className="text-xs text-gray-400 mb-4">以下为当前展示的公司信息，如需修改请联系技术人员更新数据库</p>
-          <div className="space-y-3 text-sm">
-            {[
-              ['公司名称', '山东京阳温室科技有限公司'],
-              ['联系电话', '152-7589-8666 / 152-7589-8779（王静）'],
-              ['电子邮箱', 'jingyangwenshikeji@163.com'],
-              ['公司地址', '山东省聊城市莘县工业园区鸿图街8号'],
-              ['服务时间', '周一至周六 08:30 – 17:30'],
-            ].map(([k, v]) => (
-              <div key={k} className="flex gap-3 p-3 bg-gray-50 rounded-xl">
-                <span className="text-gray-400 w-20 flex-shrink-0 font-medium">{k}</span>
-                <span className="text-gray-700">{v}</span>
-              </div>
-            ))}
-          </div>
+          <p className="text-xs text-gray-400 mb-4">保存后联系页会读取最新配置</p>
+          <div className="grid sm:grid-cols-2 gap-3">{[['company_name','公司名称'],['company_phone','联系电话1'],['company_phone2','联系电话2'],['company_contact','联系人'],['company_email','电子邮箱'],['company_address','公司地址'],['working_hours','服务时间'],['service_area','服务区域']].map(([k,label])=><label key={k} className={k==='service_area'?'sm:col-span-2':''}><span className="block text-xs text-gray-500 mb-1">{label}</span>{k==='service_area'?<textarea rows={3} value={company[k]||''} onChange={e=>setCompany(x=>({...x,[k]:e.target.value}))} className="w-full px-3 py-2 border rounded-xl text-sm"/>:<input value={company[k]||''} onChange={e=>setCompany(x=>({...x,[k]:e.target.value}))} className="w-full px-3 py-2 border rounded-xl text-sm"/>}</label>)}</div>
+          <button onClick={saveCompany} disabled={saving} className="mt-4 px-6 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-semibold">保存公司信息</button>
         </div>
       </div>
     </AdminLayout>

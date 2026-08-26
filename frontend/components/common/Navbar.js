@@ -58,7 +58,7 @@ export default function Navbar({ transparent = false }) {
     { href: '/contact',    label: t('nav.contact') },
   ];
 
-  const navBg = isTransparent ? 'bg-transparent' : 'bg-white/98 backdrop-blur-sm shadow-md';
+  const navBg = isTransparent ? 'bg-black/35 backdrop-blur-sm' : 'bg-white shadow-md';
   const textClr = isTransparent ? 'text-white' : 'text-gray-800';
   const hoverBg = isTransparent ? 'hover:bg-white/15' : 'hover:bg-gray-100';
 

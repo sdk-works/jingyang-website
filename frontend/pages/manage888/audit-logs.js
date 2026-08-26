@@ -40,6 +40,7 @@ export default function AuditLogsPage() {
   useEffect(() => { load(); }, [page, resource]);
 
   const totalPages = Math.ceil(total / LIMIT);
+  const exportLogs=async()=>{try{const res=await axios.get(`/api/admin/audit-logs-export${resource?`?resource=${resource}`:''}`,{headers:auth(),responseType:'blob'});const u=URL.createObjectURL(res.data);const a=document.createElement('a');a.href=u;a.download=`操作日志-${new Date().toISOString().slice(0,10)}.xlsx`;a.click();URL.revokeObjectURL(u);}catch{alert('日志导出失败')}};
 
   return (
     <AdminLayout title="操作日志">
@@ -57,6 +58,7 @@ export default function AuditLogsPage() {
         <button onClick={() => { setResource(''); setPage(1); }}
           className="px-3 py-2 bg-gray-100 text-gray-600 rounded-xl text-sm hover:bg-gray-200 transition-colors"
         >重置</button>
+        <button onClick={exportLogs} className="ml-auto px-4 py-2 bg-primary-600 text-white rounded-xl text-sm">导出Excel</button>
       </div>
 
       {/* 日志列表 */}
@@ -86,7 +88,7 @@ export default function AuditLogsPage() {
                     {RESOURCE_LABELS[log.resource] || log.resource || '-'}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-700 max-w-xs">
-                    <div className="truncate">{log.detail || '-'}</div>
+                    <div className="whitespace-normal break-words" title={log.detail||''}>{log.detail || '-'}</div>
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">{log.username || '-'}</td>
                   <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">

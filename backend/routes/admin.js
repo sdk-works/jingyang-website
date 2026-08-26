@@ -206,9 +206,15 @@ router.post('/upload', authenticate, requireRole(ROLES.EDIT), (req, res, next) =
     if (!req.file) {
       return res.status(400).json({ error: '请选择要上传的文件' });
     }
+    // 浏览器 multipart 的原文件名可能被 multer 按 latin1 解释，恢复 UTF-8 中文名。
+    const rawName = req.file.originalname;
+    const originalName = /[ÃÂæçé]/.test(rawName) ? Buffer.from(rawName, 'latin1').toString('utf8') : rawName;
     const url = `/uploads/${req.file.filename}`;
-    auditLog(req, 'upload', 'media', req.file.filename, `上传文件 ${req.file.originalname}`).catch(() => {});
-    res.json({ success: true, url, filename: req.file.filename, size: req.file.size });
+    const type = ['products','cases','articles'].includes(req.body.entity_type) ? req.body.entity_type : 'media';
+    const target = String(req.body.entity_name || req.body.entity_id || '尚未命名').slice(0,200);
+    auditLog(req, 'upload', type, req.body.entity_id || req.file.filename,
+      `上传${type==='products'?'产品':type==='cases'?'案例':type==='articles'?'文章':'媒体'}文件｜关联：${target}｜原文件：${originalName}｜保存名：${req.file.filename}｜大小：${req.file.size}字节`).catch(() => {});
+    res.json({ success: true, url, filename: req.file.filename, original_name:originalName, size: req.file.size });
   });
 });
 
@@ -523,6 +529,31 @@ router.get('/audit-logs', authenticate, requireRole(ROLES.MANAGE), async (req, r
     );
     res.json({ data: rows, total: +cnt.rows[0].count });
   } catch (err) { res.status(500).json({ error: 'Server error' }); }
+});
+
+router.get('/audit-logs-export', authenticate, requireRole(ROLES.MANAGE), async (req, res) => {
+  try {
+    const params=[]; let where='';
+    if (req.query.resource) { params.push(req.query.resource); where='WHERE resource=$1'; }
+    const { rows } = await query(`SELECT action,resource,resource_id,detail,username,ip_address,created_at FROM audit_logs ${where} ORDER BY created_at DESC`,params);
+    const labels={create:'新增',update:'修改',delete:'删除',login:'登录',upload:'上传',translate:'翻译'};
+    const resources={products:'产品',cases:'案例',articles:'文章',contacts:'咨询',users:'账号',settings:'设置',media:'媒体'};
+    const data=rows.map(x=>({'操作类型':labels[x.action]||x.action,'模块':resources[x.resource]||x.resource,'关联ID':x.resource_id||'', '操作内容':x.detail||'', '操作人':x.username||'', 'IP':x.ip_address||'', '时间':x.created_at}));
+    const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(data),'操作日志');
+    const buf=XLSX.write(wb,{type:'buffer',bookType:'xlsx'});
+    res.setHeader('Content-Disposition',`attachment; filename="audit-logs-${Date.now()}.xlsx"`);
+    res.type('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet').send(buf);
+  } catch(err) { console.error(err); res.status(500).json({error:'导出失败'}); }
+});
+
+router.get('/site-settings', authenticate, requireRole(ROLES.MANAGE), async (req,res)=>{
+  const {rows}=await query(`SELECT key,value FROM site_settings WHERE key=ANY($1)`,[['company_name','company_phone','company_phone2','company_contact','company_email','company_address','working_hours','service_area']]);
+  res.json({data:Object.fromEntries(rows.map(x=>[x.key,x.value]))});
+});
+router.put('/site-settings', authenticate, requireRole(ROLES.MANAGE), async (req,res)=>{
+  const allowed=['company_name','company_phone','company_phone2','company_contact','company_email','company_address','working_hours','service_area'];
+  for(const key of allowed) if(Object.prototype.hasOwnProperty.call(req.body,key)) await query(`INSERT INTO site_settings(key,value,updated_at) VALUES($1,$2,NOW()) ON CONFLICT(key) DO UPDATE SET value=$2,updated_at=NOW()`,[key,String(req.body[key]||'')]);
+  await auditLog(req,'update','settings','company-info','更新公司联系方式和服务区域'); res.json({success:true});
 });
 
 // ──────────────────────────────────────────────────────────

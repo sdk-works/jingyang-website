@@ -14,7 +14,7 @@ const CAT_LABELS = { tech:'产品技术', system:'配套系统', parts:'设备�
 const EMPTY = { name:'', slug:'', category:'tech', description:'', features:'', price_per_sqm:'', is_active:true, cover_image:'', translations:{} };
 
 // 图片上传组件
-function ImageUploader({ value, onChange, auth }) {
+function ImageUploader({ value, onChange, auth, entityId, entityName }) {
   const [uploading, setUploading] = useState(false);
   const [preview,   setPreview]   = useState(value || '');
   const inputRef = useRef();
@@ -25,6 +25,7 @@ function ImageUploader({ value, onChange, auth }) {
     try {
       const fd = new FormData();
       fd.append('file', file);
+      fd.append('entity_type','products'); fd.append('entity_id',entityId||''); fd.append('entity_name',entityName||'');
       const { data } = await axios.post('/api/admin/upload', fd, {
         headers: auth()   // 不设置 Content-Type，让浏览器自动添加含 boundary 的 multipart header
       });
@@ -260,7 +261,7 @@ export default function AdminProducts() {
                 </div>
               </div>
               {/* 图片上传 */}
-              <ImageUploader value={form.cover_image} onChange={v => setForm(f => ({...f, cover_image:v}))} auth={auth}/>
+              <ImageUploader value={form.cover_image} onChange={v => setForm(f => ({...f, cover_image:v}))} auth={auth} entityId={form.id} entityName={form.name}/>
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">产品描述</label>
                 <textarea value={form.description} onChange={set('description')} rows={4} placeholder="产品详细描述..." className={`${inputCls} resize-y`}/>
