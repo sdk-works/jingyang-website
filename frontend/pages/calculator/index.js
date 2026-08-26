@@ -47,9 +47,11 @@ export default function CalculatorPage() {
   const [loading,  setLoading]  = useState(false);
   const [lead,     setLead]     = useState({ name:'', phone:'', email:'' });
   const [leadSent, setLeadSent] = useState(false);
+  const [configItems,setConfigItems]=useState([]);
 
   useEffect(() => {
     axios.get('/api/calculator/rules').then(res => {
+      if(res.data?.items?.length){setConfigItems(res.data.items);const p={},ap={};res.data.items.filter(x=>x.item_type==='base').forEach(x=>p[x.item_key]=Number(x.price_per_sqm));res.data.items.filter(x=>x.item_type==='addon').forEach(x=>ap[x.item_key]=Number(x.price_per_sqm));setPrices(v=>({...v,...p}));setAddons(v=>({...v,...ap}));}
       if (res.data?.base_prices) {
         const bp = res.data.base_prices;
         setPrices(p => ({
@@ -87,6 +89,7 @@ export default function CalculatorPage() {
         has_irrigation:    selAddons.irrigation,
         has_lighting:      selAddons.lighting,
         has_smart_control: selAddons.smart_control,
+        selected_addons:Object.keys(selAddons).filter(k=>selAddons[k]),
         lang: 'zh',
       });
       setResult(res.data);
@@ -122,13 +125,17 @@ export default function CalculatorPage() {
     } catch { setLeadSent(true); }
   };
 
-  const addonItems = [
+  const defaultAddonItems = [
     { key:'cooling',       labelKey:'cooling' },
     { key:'heating',       labelKey:'heating' },
     { key:'irrigation',    labelKey:'irrigation' },
     { key:'lighting',      labelKey:'lighting' },
     { key:'smart_control', labelKey:'smart_control' },
   ];
+  const dynamicTypes=configItems.filter(x=>x.item_type==='base').map(x=>({key:x.item_key,icon:x.icon||'🏗️',label:x.label_zh}));
+  const displayTypes=dynamicTypes.length?dynamicTypes:TYPES;
+  const dynamicAddons=configItems.filter(x=>x.item_type==='addon').map(x=>({key:x.item_key,label:x.label_zh}));
+  const addonItems=dynamicAddons.length?dynamicAddons:defaultAddonItems;
 
   return (
     <Layout title={`${t('calculator.title')} - 山东京阳温室科技有限公司`} description={t('calculator.subtitle')}
@@ -149,7 +156,7 @@ export default function CalculatorPage() {
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-3">{t('calculator.type_label')}</label>
                 <div className="grid grid-cols-1 gap-2">
-                  {TYPES.map(tp => (
+                  {displayTypes.map(tp => (
                     <button key={tp.key} onClick={() => setSelType(tp.key)}
                       className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left text-sm font-medium transition-all ${
                         selType === tp.key
@@ -158,7 +165,7 @@ export default function CalculatorPage() {
                       }`}
                     >
                       <span className="text-xl">{tp.icon}</span>
-                      <span className="flex-1">{t(`calculator.types.${tp.key}`)}</span>
+                      <span className="flex-1">{tp.label||t(`calculator.types.${tp.key}`)}</span>
                       {prices[tp.key] && (
                         <span className="text-xs font-normal text-gray-400">{prices[tp.key]}元/㎡</span>
                       )}

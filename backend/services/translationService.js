@@ -152,7 +152,12 @@ async function backfill(entityType) {
     if (!TABLES[type]) continue;
     const cfg = TABLES[type];
     const { rows } = await query(`SELECT ${cfg.idColumn} AS id FROM ${cfg.sourceTable} WHERE lang='zh'`);
-    for (const row of rows) { await enqueue(type, row.id, true); count += 1; }
+    for (const row of rows) {
+      await enqueue(type, row.id, false);
+      const pending = await query(`SELECT COUNT(*)::int AS count FROM translation_jobs
+        WHERE entity_type=$1 AND entity_id=$2 AND status<>'success'`, [type, row.id]);
+      count += pending.rows[0].count;
+    }
   }
   return { count, configured:configured() };
 }

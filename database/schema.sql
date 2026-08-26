@@ -166,6 +166,18 @@ CREATE TABLE IF NOT EXISTS site_settings (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS calculator_items (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  item_type VARCHAR(10) NOT NULL CHECK(item_type IN('base','addon')),
+  item_key VARCHAR(80) UNIQUE NOT NULL,
+  label_zh VARCHAR(120) NOT NULL,
+  icon VARCHAR(20) DEFAULT '⚙️',
+  price_per_sqm NUMERIC(12,2) NOT NULL DEFAULT 0,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ============================================
 -- 索引
 -- ============================================

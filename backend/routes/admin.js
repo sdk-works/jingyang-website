@@ -648,9 +648,22 @@ router.put('/calculator-rules', authenticate, requireRole(ROLES.MANAGE), async (
         [key, value]
       );
     }
+    for (const [key, value] of Object.entries(base_prices||{})) {
+      await query(`UPDATE calculator_items SET price_per_sqm=$2,updated_at=NOW()
+        WHERE item_type='base' AND item_key=$1`, [key, Number(value)]);
+    }
+    for (const [key, value] of Object.entries(addon_prices||{})) {
+      await query(`UPDATE calculator_items SET price_per_sqm=$2,updated_at=NOW()
+        WHERE item_type='addon' AND item_key=$1`, [key.replace(/^has_/,''), Number(value)]);
+    }
     await auditLog(req, 'update', 'settings', 'calculator-rules', '更新计算器单价');
     res.json({ success: true, message: '单价配置已保存' });
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
+
+router.get('/calculator-items',authenticate,requireRole(ROLES.MANAGE),async(req,res)=>{const{rows}=await query('SELECT * FROM calculator_items ORDER BY item_type,sort_order,label_zh');res.json({data:rows})});
+router.post('/calculator-items',authenticate,requireRole(ROLES.MANAGE),async(req,res)=>{try{const{item_type,item_key,label_zh,icon,price_per_sqm,sort_order,is_active}=req.body;if(!['base','addon'].includes(item_type)||!/^[a-z0-9_-]{2,80}$/.test(item_key)||!label_zh)return res.status(400).json({error:'类型、标识或名称无效'});const{rows}=await query('INSERT INTO calculator_items(item_type,item_key,label_zh,icon,price_per_sqm,sort_order,is_active) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *',[item_type,item_key,label_zh,icon||'⚙️',Number(price_per_sqm)||0,Number(sort_order)||0,is_active!==false]);await auditLog(req,'create','settings',rows[0].id,`新增计算器配置：${label_zh}`);res.status(201).json({data:rows[0]})}catch(e){res.status(400).json({error:'标识不能重复'})}});
+router.put('/calculator-items/:id',authenticate,requireRole(ROLES.MANAGE),async(req,res)=>{const{label_zh,icon,price_per_sqm,sort_order,is_active}=req.body;const{rows}=await query('UPDATE calculator_items SET label_zh=$1,icon=$2,price_per_sqm=$3,sort_order=$4,is_active=$5,updated_at=NOW() WHERE id=$6 RETURNING *',[label_zh,icon||'⚙️',Number(price_per_sqm)||0,Number(sort_order)||0,is_active!==false,req.params.id]);await auditLog(req,'update','settings',req.params.id,`更新计算器配置：${label_zh}`);res.json({data:rows[0]})});
+router.delete('/calculator-items/:id',authenticate,requireRole(ROLES.MANAGE),async(req,res)=>{const{rows}=await query('DELETE FROM calculator_items WHERE id=$1 RETURNING label_zh',[req.params.id]);await auditLog(req,'delete','settings',req.params.id,`删除计算器配置：${rows[0]?.label_zh||req.params.id}`);res.json({success:true})});
 
 module.exports = router;

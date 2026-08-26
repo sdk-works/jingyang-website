@@ -42,11 +42,13 @@ router.post('/calculate', async (req, res) => {
       has_lighting      = false,
       has_cooling       = false,
       has_heating       = false,   // 新增
+      selected_addons   = [],
       lang = 'zh'
     } = req.body;
 
     if (!greenhouse_type || !area) return res.status(400).json({ error: 'greenhouse_type and area are required' });
-    if (!PRICE_RULES[greenhouse_type])   return res.status(400).json({ error: 'Invalid greenhouse type' });
+    const baseRow=await query("SELECT price_per_sqm FROM calculator_items WHERE item_type='base' AND item_key=$1 AND is_active=true",[greenhouse_type]).catch(()=>({rows:[]}));
+    if (!baseRow.rows.length && !PRICE_RULES[greenhouse_type]) return res.status(400).json({ error: 'Invalid greenhouse type' });
 
     const areaNum = parseFloat(area);
     if (!Number.isFinite(areaNum) || areaNum <= 0 || areaNum > 10000000) {
@@ -54,7 +56,7 @@ router.post('/calculate', async (req, res) => {
     }
 
     // 尝试从 DB 读取自定义单价
-    let basePrice = PRICE_RULES[greenhouse_type];
+    let basePrice = baseRow.rows.length ? Number(baseRow.rows[0].price_per_sqm) : PRICE_RULES[greenhouse_type];
     try {
       const { rows } = await query(
         "SELECT key,value FROM site_settings WHERE key = $1",
@@ -66,9 +68,13 @@ router.post('/calculate', async (req, res) => {
     let addons = 0;
     const addonDetails = [];
     const addonMap = { has_smart_control, has_irrigation, has_lighting, has_cooling, has_heating };
+    for(const key of selected_addons) addonMap[`has_${key}`]=true;
     for (const [k, v] of Object.entries(addonMap)) {
-      if (v && ADDON_RULES[k]) {
-        let price = ADDON_RULES[k];
+      if (v) {
+        const itemKey=k.replace('has_','');
+        const row=await query("SELECT price_per_sqm FROM calculator_items WHERE item_type='addon' AND item_key=$1 AND is_active=true",[itemKey]).catch(()=>({rows:[]}));
+        if(!row.rows.length&&!ADDON_RULES[k]) continue;
+        let price = row.rows.length?Number(row.rows[0].price_per_sqm):ADDON_RULES[k];
         try {
           const { rows } = await query("SELECT value FROM site_settings WHERE key=$1", [`calc_addon_${k}`]);
           if (rows.length && parseFloat(rows[0].value) > 0) price = parseFloat(rows[0].value);
@@ -149,7 +155,8 @@ router.get('/rules', async (req, res) => {
       has_smart_control: db['calc_addon_has_smart_control'] || ADDON_RULES.has_smart_control,
       has_heating:       db['calc_addon_has_heating']       || ADDON_RULES.has_heating,
     };
-    res.json({ base_prices, addon_prices, currency: 'CNY' });
+    const items=await query("SELECT id,item_type,item_key,label_zh,icon,price_per_sqm,is_active,sort_order FROM calculator_items WHERE is_active=true ORDER BY item_type,sort_order").then(x=>x.rows).catch(()=>[]);
+    res.json({ base_prices, addon_prices, items, currency: 'CNY' });
   } catch {
     res.json({ base_prices: PRICE_RULES, addon_prices: ADDON_RULES, currency: 'CNY' });
   }

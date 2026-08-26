@@ -11,11 +11,11 @@ export default function TranslationPanel({ entityType, auth }) {
   };
   useEffect(() => { load(); const timer=setInterval(load,10000); return()=>clearInterval(timer); }, []);
   const backfill = async () => {
-    if (!confirm('为当前全部历史内容创建英、俄、阿翻译任务？已有自动译文可能被重新生成。')) return;
+    if (!confirm('只为缺失、失败或中文已更新的内容创建翻译任务；已有成功译文不会重复翻译。是否继续？')) return;
     setBusy(true);
     try {
       const { data } = await axios.post('/api/admin/translations/backfill', { entity_type:entityType }, { headers:auth() });
-      alert(data.configured ? `已创建 ${data.count} 条内容的翻译任务` : `已登记 ${data.count} 条内容；配置翻译服务后将自动执行`);
+      alert(data.count ? `已创建 ${data.count} 个缺失或待更新的语言任务` : '没有需要补译的内容');
       await load();
     } catch (e) { alert(e.response?.data?.error || '创建翻译任务失败'); }
     setBusy(false);
@@ -29,7 +29,7 @@ export default function TranslationPanel({ entityType, auth }) {
       </span>
       {rows.map(x => <span key={x.status} className="rounded-full bg-white px-2 py-1 text-gray-600">{LABELS[x.status] || x.status}: {x.count}</span>)}
       <button onClick={backfill} disabled={busy} className="ml-auto rounded-lg bg-blue-600 px-3 py-1.5 font-semibold text-white disabled:opacity-50">
-        {busy ? '处理中...' : '批量补译历史内容'}
+        {busy ? '处理中...' : '补译缺失内容'}
       </button>
     </div>
   );
