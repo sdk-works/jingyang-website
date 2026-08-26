@@ -60,8 +60,7 @@ function MarkdownContent({ content: text }) {
 
 function ArticleImage({ article, color, className = '' }) {
   const [err, setErr] = useState(false);
-  const src = article.cover_image || `/images/news/${article.slug || article.id}.jpg`;
-  if (!err) return <img src={src} alt={article.title} className={`w-full h-full object-cover ${className}`} onError={() => setErr(true)}/>;
+  if (article.cover_image && !err) return <img src={article.cover_image} alt={article.title} className={`w-full h-full object-cover ${className}`} onError={() => setErr(true)}/>;
   return (
     <div className={`w-full h-full flex items-center justify-center ${className}`} style={{ background: `linear-gradient(135deg,${color}cc,${color}66)` }}>
       <svg className="w-12 h-12 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">

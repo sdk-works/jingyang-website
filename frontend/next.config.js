@@ -11,6 +11,7 @@ const nextConfig = {
   // 保留你原有接口转发配置
   async rewrites() {
     return [
+      { source: '/favicon.ico', destination: '/favicon.svg' },
       {
         source: '/api/:path*',
         destination: `${process.env.BACKEND_INTERNAL_URL || 'http://127.0.0.1:4001'}/api/:path*`
