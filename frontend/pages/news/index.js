@@ -101,12 +101,14 @@ function ArticleModal({ article, onClose, t, getText }) {
 export default function NewsPage() {
   const { t } = useTranslation('common');
   const { locale = 'zh' } = useRouter();
-  const [articles, setArticles] = useState(FALLBACK);
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState('all');
   const [selected, setSelected] = useState(null);
   useEffect(() => {
+    setLoading(true);
     axios.get('/api/articles', { params:{ lang:locale } })
-      .then(res => { if (res.data?.data?.length) setArticles(res.data.data); }).catch(() => {});
+      .then(res => { setArticles(res.data?.data || []); }).catch(() => setArticles([])).finally(()=>setLoading(false));
   }, [locale]);
 
   const getText = (art, field) => art[field];
@@ -119,7 +121,7 @@ export default function NewsPage() {
   const filtered = category === 'all' ? articles : articles.filter(a => a.category === category);
 
   return (
-    <Layout title={`${t('news.title')} - 山东京阳温室科技有限公司`} description={t('news.subtitle')} keywords="温室行业资讯,智能温室技术,农业大棚新闻">
+    <Layout title={`${t('news.title')} - ${t('company.name')}`} description={t('news.subtitle')} keywords="温室行业资讯,智能温室技术,农业大棚新闻">
       <section className="py-16 text-white text-center" style={{ background:'linear-gradient(135deg,#1a3d2b,#2d6a4f)' }}>
         <div className="max-w-2xl mx-auto px-6">
           <div className="text-xs tracking-widest uppercase text-green-300 mb-3">{t('news.title')}</div>
@@ -137,7 +139,7 @@ export default function NewsPage() {
       </section>
       <section className="py-12 bg-gray-50">
         <div className="max-w-5xl mx-auto px-6">
-          <div className="grid md:grid-cols-2 gap-6">
+          {loading ? <div className="text-center py-20 text-gray-400">{t('common.loading')}</div> : <div className="grid md:grid-cols-2 gap-6">
             {filtered.map(article => {
               const color = CAT_COLORS[article.category] || '#2d6a4f';
               return (
@@ -156,8 +158,8 @@ export default function NewsPage() {
                 </article>
               );
             })}
-          </div>
-          {filtered.length === 0 && <div className="text-center py-20 text-gray-400">{t('common.empty')}</div>}
+          </div>}
+          {!loading && filtered.length === 0 && <div className="text-center py-20 text-gray-400">{t('common.empty')}</div>}
         </div>
       </section>
       {selected && <ArticleModal article={selected} onClose={() => setSelected(null)} t={t} getText={getText} />}

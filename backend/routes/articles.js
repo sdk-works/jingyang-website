@@ -25,7 +25,7 @@ router.get('/', async (req, res) => {
     let sql = `
       SELECT a.id, a.slug, a.cover_image, a.category, a.published_at, a.view_count,
              a.view_count AS views, COALESCE(at.title,zh.title,a.slug) title,
-             COALESCE(at.summary,zh.summary) summary
+             COALESCE(at.summary,zh.summary) summary, COALESCE(at.content,zh.content) content
       FROM articles a
       LEFT JOIN article_translations at ON a.id=at.article_id AND at.lang=$1
       LEFT JOIN article_translations zh ON a.id=zh.article_id AND zh.lang='zh'

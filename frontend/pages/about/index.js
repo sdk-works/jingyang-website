@@ -23,7 +23,7 @@ function AboutImage({ src, alt, fallback }) {
   );
 }
 
-const COMPANY = {
+const COMPANY_ZH = {
   name:    '山东京阳温室科技有限公司',
   address: '山东省聊城市莘县工业园区鸿图街8号',
   phone1:  '152-7589-8666',
@@ -32,6 +32,12 @@ const COMPANY = {
   email:   'jingyangwenshikeji@163.com',
   hours:   '周一至周六 08:30 – 17:30',
   serviceArea: '山东、河南、河北、东北、山西、陕西、江苏、安徽等全国各地',
+};
+const COMPANY_MAP = {
+  zh:COMPANY_ZH,
+  en:{...COMPANY_ZH,name:'Shandong Jingyang Greenhouse Technology Co., Ltd.',address:'No. 8 Hongtu Street, Shenxian Industrial Park, Liaocheng, Shandong, China',contact:'Wang Jing',hours:'Mon–Sat 08:30–17:30'},
+  ru:{...COMPANY_ZH,name:'Shandong Jingyang Greenhouse Technology Co., Ltd.',address:'ул. Хунту, 8, промышленный парк Шэньсянь, Ляочэн, Шаньдун, Китай',contact:'Ван Цзин',hours:'Пн–Сб 08:30–17:30'},
+  ar:{...COMPANY_ZH,name:'شركة شاندونغ جينغيانغ لتكنولوجيا الدفيئات المحدودة',address:'رقم 8، شارع هونغتو، المنطقة الصناعية في شينشيان، لياوتشنغ، شاندونغ، الصين',contact:'وانغ جينغ',hours:'الاثنين–السبت 08:30–17:30'},
 };
 
 // 合作院校：各语言版本在语言包 about.partners_list 中定义
@@ -53,6 +59,7 @@ const SERVICES = ['design','system','parts','service'];
 export default function AboutPage() {
   const { t, i18n } = useTranslation('common');
   const PARTNERS = PARTNERS_MAP[i18n.language] || PARTNERS_ZH;
+  const COMPANY = COMPANY_MAP[i18n.language] || COMPANY_ZH;
 
   return (
     <Layout
@@ -132,19 +139,12 @@ export default function AboutPage() {
             {/* 右侧图片区域 */}
             {/* 图片: /public/images/about/company.jpg - 公司外观照片 */}
             <div className="space-y-4">
-              <div className="relative h-64 rounded-2xl overflow-hidden shadow-lg bg-gradient-to-br from-primary-800 to-forest-900 flex items-center justify-center">
-                {/* 若图片存在则显示: <img src="/images/about/company.jpg" alt="公司外观" className="w-full h-full object-cover"/> */}
-                <div className="text-center text-white/60">
-                  <svg className="w-16 h-16 mx-auto mb-3 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                  </svg>
-                  <p className="text-sm">公司外观图</p>
-                  <p className="text-xs opacity-60">图片路径: /images/about/company.jpg</p>
-                </div>
+              <div className="relative h-64 rounded-2xl overflow-hidden shadow-lg">
+                <AboutImage src="/images/photo/工程案例/案例01.jpg" alt={t('about.title')} fallback="🏢"/>
               </div>
               {/* 图片: /public/images/about/factory.jpg */}
               <div className="relative h-48 rounded-2xl overflow-hidden shadow-lg">
-                <AboutImage src="/images/about/factory.jpg" alt="工厂车间" fallback="🏗️"/>
+                <AboutImage src="/images/photo/工程案例/案例02.jpg" alt={t('products.title')} fallback="🏗️"/>
               </div>
             </div>
           </div>

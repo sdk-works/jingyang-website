@@ -26,6 +26,7 @@ export default function AdminLayout({ children, title = '管理后台' }) {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
+    if (window.innerWidth < 768) setCollapsed(true);
     const token = localStorage.getItem('admin_token');
     if (!token) { router.replace('/manage888'); return; } // 🔥 修复登录页
     try {
@@ -136,7 +137,7 @@ export default function AdminLayout({ children, title = '管理后台' }) {
         </aside>
 
         <main className={`flex-1 transition-all duration-300 ${collapsed ? 'ml-16' : 'ml-56'} min-h-screen`}>
-          <header className="sticky top-0 z-30 h-16 bg-white border-b border-gray-100 shadow-sm flex items-center justify-between px-6">
+          <header className="sticky top-0 z-30 h-16 bg-white border-b border-gray-100 shadow-sm flex items-center justify-between px-3 sm:px-6">
             <h1 className="text-base font-bold text-gray-900">{title}</h1>
             <Link href="/" target="_blank"
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-xs font-medium text-gray-600 transition-colors"
@@ -147,7 +148,7 @@ export default function AdminLayout({ children, title = '管理后台' }) {
               查看前台
             </Link>
           </header>
-          <div className="p-6">{children}</div>
+          <div className="p-3 sm:p-6 min-w-0">{children}</div>
         </main>
       </div>
     </>

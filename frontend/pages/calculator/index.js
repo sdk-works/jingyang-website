@@ -3,6 +3,7 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import axios from 'axios';
 import Layout from '../../components/common/Layout';
+import { useRouter } from 'next/router';
 
 const toBackendType = (k) => ({
   'wenlo-glass':    'glass',
@@ -37,6 +38,7 @@ const TYPES = [
 
 export default function CalculatorPage() {
   const { t } = useTranslation('common');
+  const { locale='zh' } = useRouter();
 
   const [prices,   setPrices]   = useState(DEFAULT_PRICES);
   const [addons,   setAddons]   = useState(DEFAULT_ADDONS);
@@ -78,7 +80,7 @@ export default function CalculatorPage() {
 
   const calculate = async () => {
     if (!selType) { alert(t('calculator.select_type')); return; }
-    if (!area || isNaN(area) || Number(area) <= 0) { alert('请输入有效面积'); return; }
+    if (!area || !/^\d+(?:\.\d+)?$/.test(String(area)) || Number(area) <= 0) { alert(t('calculator.area_placeholder')); return; }
     setLoading(true);
     try {
       const res = await axios.post('/api/calculator/calculate', {
@@ -90,7 +92,7 @@ export default function CalculatorPage() {
         has_lighting:      selAddons.lighting,
         has_smart_control: selAddons.smart_control,
         selected_addons:Object.keys(selAddons).filter(k=>selAddons[k]),
-        lang: 'zh',
+        lang: locale,
       });
       setResult(res.data);
     } catch {
@@ -111,18 +113,19 @@ export default function CalculatorPage() {
         total_price_per_sqm: ppsm,
         total_price: total,
         currency: 'CNY',
-        recommendations: ['联系我们获取专业配置建议','根据实际情况定制方案'],
+        recommendations: [],
       });
     }
     setLoading(false);
   };
 
   const submitLead = async () => {
-    if (!lead.name || (!lead.phone && !lead.email)) { alert('请填写姓名和联系方式'); return; }
+    if (!lead.name) { alert(t('contact.error_name')); return; }
+    if (!lead.phone && !lead.email) { alert(t('contact.error_contact')); return; }
     try {
       await axios.post('/api/contact', { ...lead, greenhouse_type: selType, area, source: 'calculator' });
       setLeadSent(true);
-    } catch { setLeadSent(true); }
+    } catch (e) { alert(e.response?.data?.message || t('contact.error_server')); }
   };
 
   const defaultAddonItems = [
@@ -132,13 +135,18 @@ export default function CalculatorPage() {
     { key:'lighting',      labelKey:'lighting' },
     { key:'smart_control', labelKey:'smart_control' },
   ];
-  const dynamicTypes=configItems.filter(x=>x.item_type==='base').map(x=>({key:x.item_key,icon:x.icon||'🏗️',label:x.label_zh}));
+  const localizedLabel=x=>x[`label_${locale}`]||x.label_zh;
+  const dynamicTypes=configItems.filter(x=>x.item_type==='base').map(x=>({key:x.item_key,icon:x.icon||'🏗️',label:localizedLabel(x)}));
   const displayTypes=dynamicTypes.length?dynamicTypes:TYPES;
-  const dynamicAddons=configItems.filter(x=>x.item_type==='addon').map(x=>({key:x.item_key,label:x.label_zh}));
+  const dynamicAddons=configItems.filter(x=>x.item_type==='addon').map(x=>({key:x.item_key,label:localizedLabel(x)}));
   const addonItems=dynamicAddons.length?dynamicAddons:defaultAddonItems;
+  const typeKeys={glass:'wenlo-glass',pc:'pc-panel',solar:'solar-room','multi-span':'film-multispan',arch:'single-arch'};
+  const typeLabel=tp=>typeKeys[tp.key]?t(`calculator.types.${typeKeys[tp.key]}`):(tp.label||t(`calculator.types.${tp.key}`));
+  const addonLabel=item=>['cooling','heating','irrigation','lighting','smart_control'].includes(item.key)?t(`calculator.${item.key}`):(item.label||item.key);
+  const unit=`${t('common.cny')}/${t('common.sqm')}`;
 
   return (
-    <Layout title={`${t('calculator.title')} - 山东京阳温室科技有限公司`} description={t('calculator.subtitle')}
+    <Layout title={`${t('calculator.title')} - ${t('company.name')}`} description={t('calculator.subtitle')}
       keywords="温室预算计算器,温室造价,大棚报价,温室建设费用">
       <section className="py-14 text-white text-center" style={{ background:'linear-gradient(135deg,#1a3d2b,#2d6a4f)' }}>
         <div className="max-w-2xl mx-auto px-6">
@@ -165,9 +173,9 @@ export default function CalculatorPage() {
                       }`}
                     >
                       <span className="text-xl">{tp.icon}</span>
-                      <span className="flex-1">{tp.label||t(`calculator.types.${tp.key}`)}</span>
+                      <span className="flex-1">{typeLabel(tp)}</span>
                       {prices[tp.key] && (
-                        <span className="text-xs font-normal text-gray-400">{prices[tp.key]}元/㎡</span>
+                        <span className="text-xs font-normal text-gray-400">{prices[tp.key]} {unit}</span>
                       )}
                     </button>
                   ))}
@@ -196,10 +204,10 @@ export default function CalculatorPage() {
                           className="w-4 h-4 text-primary-600 rounded"
                         />
                         <span className="text-sm text-gray-700">
-                          {item.labelKey ? t(`calculator.${item.labelKey}`) : item.label}
+                          {addonLabel(item)}
                         </span>
                       </div>
-                      <span className="text-xs text-gray-400">+{addons[item.key]}元/㎡</span>
+                      <span className="text-xs text-gray-400">+{addons[item.key]} {unit}</span>
                     </label>
                   ))}
                 </div>
@@ -224,20 +232,20 @@ export default function CalculatorPage() {
                     <div className="mt-6 space-y-3">
                       <div className="flex justify-between text-sm">
                         <span className="text-white/70">{t('calculator.base_price')}</span>
-                        <span className="font-semibold">{result.base_price_per_sqm}元/㎡</span>
+                        <span className="font-semibold">{result.base_price_per_sqm} {unit}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-white/70">{t('calculator.addon_price')}</span>
-                        <span className="font-semibold">+{result.addon_price_per_sqm}元/㎡</span>
+                        <span className="font-semibold">+{result.addon_price_per_sqm} {unit}</span>
                       </div>
                       <div className="h-px bg-white/20"/>
                       <div className="flex justify-between">
                         <span className="text-white/70">{t('calculator.price_per_sqm')}</span>
-                        <span className="font-bold text-lg">{result.total_price_per_sqm}元/㎡</span>
+                        <span className="font-bold text-lg">{result.total_price_per_sqm} {unit}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-white/70">建设面积</span>
-                        <span className="font-bold">{Number(result.area).toLocaleString()}㎡</span>
+                        <span className="text-white/70">{t('calculator.area_label')}</span>
+                        <span className="font-bold">{Number(result.area).toLocaleString()} {t('common.sqm')}</span>
                       </div>
                     </div>
                   </div>
@@ -260,14 +268,14 @@ export default function CalculatorPage() {
 
                   {!leadSent ? (
                     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                      <h4 className="text-sm font-semibold text-gray-800 mb-4">获取专业详细报价</h4>
+                      <h4 className="text-sm font-semibold text-gray-800 mb-4">{t('calculator.get_quote')}</h4>
                       <div className="space-y-3">
                         <input value={lead.name} onChange={e => setLead(l => ({...l, name:e.target.value}))}
-                          placeholder="您的姓名" className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary-400"/>
+                          placeholder={t('contact.name_placeholder')} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary-400"/>
                         <input value={lead.phone} onChange={e => setLead(l => ({...l, phone:e.target.value}))}
-                          placeholder="手机号码" className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary-400"/>
+                          placeholder={t('contact.phone_placeholder')} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary-400"/>
                         <input value={lead.email} onChange={e => setLead(l => ({...l, email:e.target.value}))}
-                          placeholder="邮箱（选填）" className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary-400"/>
+                          placeholder={t('contact.email_placeholder')} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary-400"/>
                         <button onClick={submitLead}
                           className="w-full py-3 bg-primary-600 text-white rounded-xl font-semibold text-sm hover:bg-primary-700 transition-colors"
                         >{t('calculator.get_quote')}</button>
@@ -276,7 +284,7 @@ export default function CalculatorPage() {
                   ) : (
                     <div className="bg-green-50 rounded-2xl border border-green-100 p-5 text-center">
                       <div className="text-3xl mb-2">✅</div>
-                      <p className="text-green-700 font-semibold text-sm">已收到！顾问24小时内联系您</p>
+                      <p className="text-green-700 font-semibold text-sm">{t('contact.success_desc')}</p>
                     </div>
                   )}
 
@@ -291,7 +299,7 @@ export default function CalculatorPage() {
                 <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-12 text-center text-gray-400">
                   <div className="text-6xl mb-4">🧮</div>
                   <p className="text-sm">{t('calculator.select_type')}</p>
-                  <p className="text-xs mt-1">输入面积后点击"立即计算"</p>
+                  <p className="text-xs mt-1">{t('calculator.area_placeholder')}</p>
                 </div>
               )}
             </div>

@@ -37,11 +37,22 @@ export const CASE_IMAGES = [
   '/images/photo/工程案例/案例06.jpg', '/images/photo/工程案例/案例07.jpg',
 ];
 
+const TYPE_MAP = {
+  en:{'薄膜连栋温室':'Multi-span Film Greenhouse','玻璃温室':'Glass Greenhouse','日光温室':'Solar Greenhouse'},
+  ru:{'薄膜连栋温室':'Многопролётная плёночная теплица','玻璃温室':'Стеклянная теплица','日光温室':'Солнечная теплица'},
+  ar:{'薄膜连栋温室':'دفيئة فيلمية متعددة البحور','玻璃温室':'دفيئة زجاجية','日光温室':'دفيئة شمسية'},
+};
+
 export function localizeCase(item, locale) {
   if (!item || locale === 'zh') return item;
-  // 数据库已有目标语言译文时直接使用；这里只为尚未补译的历史中文数据兜底。
-  if (item.title && !/[\u3400-\u9fff]/.test(item.title)) return item;
   const text = CASE_CONTENT[item.slug]?.[locale];
-  if (!text) return item;
-  return { ...item, title: text[0], address: text[1], province: text[1], desc: text[2], description: text[2] };
+  const localizedType = TYPE_MAP[locale]?.[item.greenhouse_type || item.type] || item.greenhouse_type || item.type;
+  if (!text) return { ...item, greenhouse_type:localizedType, type:localizedType };
+  return { ...item,
+    title:/[\u3400-\u9fff]/.test(item.title||'') ? text[0] : item.title,
+    address:text[1], province:text[1],
+    desc:/[\u3400-\u9fff]/.test(item.desc||item.description||'') ? text[2] : (item.desc||item.description),
+    description:/[\u3400-\u9fff]/.test(item.description||'') ? text[2] : item.description,
+    greenhouse_type:localizedType, type:localizedType,
+  };
 }

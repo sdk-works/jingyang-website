@@ -35,6 +35,9 @@ router.post('/', [
     }
 
     const { name, country, phone, email, greenhouse_type, area, message } = req.body;
+    if (!String(phone || '').trim() && !String(email || '').trim()) {
+      return res.status(400).json({ success:false, message:'联系电话与邮箱至少填写一项' });
+    }
     const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim()
              || req.socket?.remoteAddress || null;
 

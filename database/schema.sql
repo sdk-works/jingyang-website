@@ -171,6 +171,7 @@ CREATE TABLE IF NOT EXISTS calculator_items (
   item_type VARCHAR(10) NOT NULL CHECK(item_type IN('base','addon')),
   item_key VARCHAR(80) UNIQUE NOT NULL,
   label_zh VARCHAR(120) NOT NULL,
+  label_en VARCHAR(160), label_ru VARCHAR(200), label_ar VARCHAR(200),
   icon VARCHAR(20) DEFAULT '⚙️',
   price_per_sqm NUMERIC(12,2) NOT NULL DEFAULT 0,
   is_active BOOLEAN NOT NULL DEFAULT true,

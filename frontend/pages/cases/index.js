@@ -4,6 +4,7 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import axios from 'axios';
 import Layout from '../../components/common/Layout';
 import { useRouter } from 'next/router';
+import Link from 'next/link';
 import { CASE_IMAGES, localizeCase } from '../../utils/caseContent';
 
 function CaseImage({ src, fallback, alt }) {
@@ -33,7 +34,7 @@ export default function CasesPage() {
   const getCaseText = (item, field) => item[field];
 
   return (
-    <Layout title={`${t('cases.title')} - 山东京阳温室科技有限公司`} description={t('cases.subtitle')} keywords="温室工程案例,大棚项目,温室施工实例,各地温室项目">
+    <Layout title={`${t('cases.title')} - ${t('company.name')}`} description={t('cases.subtitle')} keywords="温室工程案例,大棚项目,温室施工实例,各地温室项目">
       <section className="py-16 text-white text-center" style={{ background: 'linear-gradient(135deg,#1a3d2b,#2d6a4f)' }}>
         <div className="max-w-2xl mx-auto px-6">
           <div className="text-xs tracking-widest uppercase text-green-300 mb-3">{t('cases.title')}</div>
@@ -60,7 +61,7 @@ export default function CasesPage() {
                     <p className="text-xs text-gray-500 mb-2">📍 {getCaseText(item, 'address')}</p>
                     <p className="text-sm text-gray-500 line-clamp-2 min-h-[40px]">{getCaseText(item, 'desc')}</p>
                     <div className="mt-4">
-                      <a href={`/cases/${item.slug}`} className="text-primary-600 text-sm font-medium hover:underline">{t('common.details')} →</a>
+                      <Link href={`/cases/${item.slug}`} locale={locale} className="text-primary-600 text-sm font-medium hover:underline">{t('common.details')} →</Link>
                     </div>
                   </div>
                 </div>

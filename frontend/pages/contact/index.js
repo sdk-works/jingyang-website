@@ -64,7 +64,7 @@ export default function ContactPage() {
   const inputCls = 'w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-all';
 
   return (
-    <Layout title={`${t('contact.title')} - 山东京阳温室科技有限公司`} description={t('contact.subtitle')}
+    <Layout title={`${t('contact.title')} - ${t('company.name')}`} description={t('contact.subtitle')}
       keywords="温室报价,温室咨询,联系京阳温室,温室免费方案">
       {/* Hero */}
       <section className="py-16 text-white text-center" style={{ background: 'linear-gradient(135deg,#1a3d2b,#2d6a4f)' }}>

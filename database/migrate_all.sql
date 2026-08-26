@@ -104,5 +104,11 @@ INSERT INTO calculator_items(item_type,item_key,label_zh,icon,price_per_sqm,sort
 ('addon','cooling','降温系统','❄️',40,10),('addon','heating','升温系统','🔥',30,20),('addon','irrigation','水肥一体化','💧',30,30),('addon','lighting','补光系统','💡',50,40),('addon','smart_control','智能控制','🤖',20,50)
 ON CONFLICT(item_key) DO NOTHING;
 
+ALTER TABLE calculator_records ADD COLUMN IF NOT EXISTS has_heating BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE calculator_records ADD COLUMN IF NOT EXISTS selected_addons JSONB NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE calculator_items ADD COLUMN IF NOT EXISTS label_en VARCHAR(160);
+ALTER TABLE calculator_items ADD COLUMN IF NOT EXISTS label_ru VARCHAR(200);
+ALTER TABLE calculator_items ADD COLUMN IF NOT EXISTS label_ar VARCHAR(200);
+
 -- ── 完成 ─────────────────────────────────────────────────
 DO $$ BEGIN RAISE NOTICE '✅ 数据库迁移完成！'; END $$;

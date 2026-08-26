@@ -1,0 +1,9 @@
+ALTER TABLE calculator_records ADD COLUMN IF NOT EXISTS has_heating BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE calculator_records ADD COLUMN IF NOT EXISTS selected_addons JSONB NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE calculator_items ADD COLUMN IF NOT EXISTS label_en VARCHAR(160);
+ALTER TABLE calculator_items ADD COLUMN IF NOT EXISTS label_ru VARCHAR(200);
+ALTER TABLE calculator_items ADD COLUMN IF NOT EXISTS label_ar VARCHAR(200);
+UPDATE calculator_items SET
+ label_en=CASE item_key WHEN 'glass' THEN 'Venlo Glass Greenhouse' WHEN 'pc' THEN 'PC Panel Greenhouse' WHEN 'solar' THEN 'Solar Greenhouse' WHEN 'multi-span' THEN 'Multi-span Film Greenhouse' WHEN 'arch' THEN 'Single-arch Tunnel' WHEN 'cooling' THEN 'Cooling System' WHEN 'heating' THEN 'Heating System' WHEN 'irrigation' THEN 'Irrigation & Fertigation System' WHEN 'lighting' THEN 'Supplemental Lighting System' WHEN 'smart_control' THEN 'Smart Control System' ELSE label_en END,
+ label_ru=CASE item_key WHEN 'glass' THEN 'Стеклянная теплица Venlo' WHEN 'pc' THEN 'Теплица из поликарбоната' WHEN 'solar' THEN 'Солнечная теплица' WHEN 'multi-span' THEN 'Многопролётная плёночная теплица' WHEN 'arch' THEN 'Однопролётный тоннель' WHEN 'cooling' THEN 'Система охлаждения' WHEN 'heating' THEN 'Система отопления' WHEN 'irrigation' THEN 'Система орошения и фертигации' WHEN 'lighting' THEN 'Система досветки' WHEN 'smart_control' THEN 'Умное управление' ELSE label_ru END,
+ label_ar=CASE item_key WHEN 'glass' THEN 'دفيئة زجاجية فينلو' WHEN 'pc' THEN 'دفيئة ألواح بولي كربونات' WHEN 'solar' THEN 'دفيئة شمسية' WHEN 'multi-span' THEN 'دفيئة فيلمية متعددة البحور' WHEN 'arch' THEN 'نفق أحادي البحر' WHEN 'cooling' THEN 'نظام التبريد' WHEN 'heating' THEN 'نظام التدفئة' WHEN 'irrigation' THEN 'نظام الري والتسميد' WHEN 'lighting' THEN 'نظام الإضاءة التكميلية' WHEN 'smart_control' THEN 'نظام التحكم الذكي' ELSE label_ar END;

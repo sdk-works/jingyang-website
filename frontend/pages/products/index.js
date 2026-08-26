@@ -4,6 +4,7 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import axios from 'axios';
 import Layout from '../../components/common/Layout';
 import { useRouter } from 'next/router';
+import Link from 'next/link';
 
 const PRODUCT_IMAGES = [
   '/images/photo/产品技术/文洛型玻璃温室.jpg', '/images/photo/产品技术/阳光板温室.jpg',
@@ -44,7 +45,7 @@ export default function ProductsPage() {
   const filterList = activeCat === 'all' ? list : list.filter(item => (item.category_slug || item.category) === activeCat);
 
   return (
-    <Layout title={`${t('products.title')} - 山东京阳温室科技有限公司`} description={t('products.subtitle')} keywords="温室设备,温室大棚,温室骨架,温室配件,连栋温室">
+    <Layout title={`${t('products.title')} - ${t('company.name')}`} description={t('products.subtitle')} keywords="温室设备,温室大棚,温室骨架,温室配件,连栋温室">
       <section className="py-16 text-white text-center" style={{ background:'linear-gradient(135deg,#1a3d2b,#2d6a4f)' }}>
         <div className="max-w-2xl mx-auto px-6">
           <div className="text-xs tracking-widest uppercase text-green-300 mb-3">{t('products.title')}</div>
@@ -76,10 +77,10 @@ export default function ProductsPage() {
                   <div className="p-5">
                     <h3 className="font-bold text-gray-900 text-lg mb-2 line-clamp-1">{getTxt(item, 'name')}</h3>
                     <p className="text-gray-500 text-sm line-clamp-2 mb-4 min-h-[40px]">{getTxt(item, 'desc')}</p>
-                    <a href={`/products/${item.slug}`} className="inline-flex items-center text-primary-600 text-sm font-medium hover:underline">
+                    <Link href={`/products/${item.slug}`} locale={locale} className="inline-flex items-center text-primary-600 text-sm font-medium hover:underline">
                       {t('common.details')}
                       <svg className="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                    </a>
+                    </Link>
                   </div>
                 </div>
               ))}

@@ -24,7 +24,7 @@ const ADDON_RULES = {
 };
 
 const RECOMMENDATIONS = {
-  glass:        { zh:['配备天沟排水系统','建议安装内遮阳系统','推荐智能通风控制'],       en:['Gutter drainage system','Shade system recommended','Smart ventilation'] },
+  glass:        { zh:['配备天沟排水系统','建议安装内遮阳系统','推荐智能通风控制'], en:['Gutter drainage system','Shade system recommended','Smart ventilation'], ru:['Водосточная система','Рекомендуется затенение','Умная вентиляция'], ar:['نظام تصريف للمزاريب','يوصى بنظام تظليل','تهوية ذكية'] },
   film:         { zh:['建议安装滴灌系统','配备内保温幕帘','推荐简易环境控制器'],         en:['Drip irrigation recommended','Thermal screen','Simple environment controller'] },
   pc:           { zh:['双层PC板增强保温','建议安装遮阳网','推荐湿帘+风机降温'],          en:['Double-layer PC panel','Shade net recommended','Evaporative cooling'] },
   'multi-span': { zh:['统一智能化控制管理','配备完整水肥系统','建议安装天沟集水系统'],   en:['Unified smart control','Complete irrigation','Gutter collection recommended'] },
@@ -46,11 +46,14 @@ router.post('/calculate', async (req, res) => {
       lang = 'zh'
     } = req.body;
 
-    if (!greenhouse_type || !area) return res.status(400).json({ error: 'greenhouse_type and area are required' });
+    if (!greenhouse_type || area === undefined || area === null || area === '') return res.status(400).json({ error: 'greenhouse_type and area are required' });
+    if (!Array.isArray(selected_addons)) return res.status(400).json({ error:'selected_addons must be an array' });
     const baseRow=await query("SELECT price_per_sqm FROM calculator_items WHERE item_type='base' AND item_key=$1 AND is_active=true",[greenhouse_type]).catch(()=>({rows:[]}));
     if (!baseRow.rows.length && !PRICE_RULES[greenhouse_type]) return res.status(400).json({ error: 'Invalid greenhouse type' });
 
-    const areaNum = parseFloat(area);
+    const areaText = String(area).trim();
+    if (!/^\d+(?:\.\d+)?$/.test(areaText)) return res.status(400).json({ error:'Area must be a number' });
+    const areaNum = Number(areaText);
     if (!Number.isFinite(areaNum) || areaNum <= 0 || areaNum > 10000000) {
       return res.status(400).json({ error: 'Area must be between 1 and 10000000 square meters' });
     }
@@ -68,7 +71,16 @@ router.post('/calculate', async (req, res) => {
     let addons = 0;
     const addonDetails = [];
     const addonMap = { has_smart_control, has_irrigation, has_lighting, has_cooling, has_heating };
-    for(const key of selected_addons) addonMap[`has_${key}`]=true;
+    const requestedAddons = [...new Set(selected_addons.map(String))];
+    if (requestedAddons.some(key => !/^[a-z0-9_-]{2,80}$/.test(key))) return res.status(400).json({error:'Invalid addon key'});
+    if (requestedAddons.length) {
+      const active = await query("SELECT item_key FROM calculator_items WHERE item_type='addon' AND is_active=true AND item_key=ANY($1)",[requestedAddons]);
+      const found = new Set(active.rows.map(x=>x.item_key));
+      if (requestedAddons.some(key=>!found.has(key) && !Object.prototype.hasOwnProperty.call(ADDON_RULES,`has_${key}`))) {
+        return res.status(400).json({error:'Invalid or inactive addon'});
+      }
+    }
+    for(const key of requestedAddons) addonMap[`has_${key}`]=true;
     for (const [k, v] of Object.entries(addonMap)) {
       if (v) {
         const itemKey=k.replace('has_','');
@@ -87,15 +99,15 @@ router.post('/calculate', async (req, res) => {
     const pricePerSqm = basePrice + addons;
     const totalPrice  = Math.round(pricePerSqm * areaNum);
     const typeRecs    = RECOMMENDATIONS[greenhouse_type] || {};
-    const recommendations = typeRecs[lang] || typeRecs.zh || [];
+    const recommendations = typeRecs[lang] || [];
 
     // 保存记录（非阻塞）
-    query(
+    const record = await query(
       `INSERT INTO calculator_records
-       (greenhouse_type,area,has_smart_control,has_irrigation,has_lighting,has_cooling,base_price_per_sqm,total_price,lang)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`,
-      [greenhouse_type, areaNum, has_smart_control, has_irrigation, has_lighting, has_cooling, pricePerSqm, totalPrice, lang]
-    ).catch(() => {});
+       (greenhouse_type,area,has_smart_control,has_irrigation,has_lighting,has_cooling,has_heating,selected_addons,base_price_per_sqm,total_price,lang)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
+      [greenhouse_type, areaNum, has_smart_control, has_irrigation, has_lighting, has_cooling, has_heating, JSON.stringify(requestedAddons), pricePerSqm, totalPrice, lang]
+    ).catch(() => ({rows:[]}));
 
     res.json({
       greenhouse_type, area: areaNum,
@@ -105,7 +117,7 @@ router.post('/calculate', async (req, res) => {
       total_price: totalPrice,
       currency: 'CNY',
       addon_details: addonDetails,
-      recommendations,
+      recommendations, record_id:record.rows[0]?.id || null,
     });
   } catch (err) {
     console.error('Calculator error:', err);
@@ -155,7 +167,7 @@ router.get('/rules', async (req, res) => {
       has_smart_control: db['calc_addon_has_smart_control'] || ADDON_RULES.has_smart_control,
       has_heating:       db['calc_addon_has_heating']       || ADDON_RULES.has_heating,
     };
-    const items=await query("SELECT id,item_type,item_key,label_zh,icon,price_per_sqm,is_active,sort_order FROM calculator_items WHERE is_active=true ORDER BY item_type,sort_order").then(x=>x.rows).catch(()=>[]);
+    const items=await query("SELECT id,item_type,item_key,label_zh,label_en,label_ru,label_ar,icon,price_per_sqm,is_active,sort_order FROM calculator_items WHERE is_active=true ORDER BY item_type,sort_order").then(x=>x.rows).catch(()=>[]);
     res.json({ base_prices, addon_prices, items, currency: 'CNY' });
   } catch {
     res.json({ base_prices: PRICE_RULES, addon_prices: ADDON_RULES, currency: 'CNY' });

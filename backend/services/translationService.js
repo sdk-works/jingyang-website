@@ -145,6 +145,17 @@ function startWorker() {
   setTimeout(processOne, 1000).unref();
 }
 
+async function translateCalculatorItem(id, labelZh) {
+  if (!configured() || !labelZh) return;
+  for (const lang of TARGETS) {
+    try {
+      const translated=await callProvider({label:labelZh},lang);
+      const column={en:'label_en',ru:'label_ru',ar:'label_ar'}[lang];
+      await query(`UPDATE calculator_items SET ${column}=COALESCE(NULLIF(${column},''),$2),updated_at=NOW() WHERE id=$1`,[id,translated.label||'']);
+    } catch(error) { console.error('[calculator-translation]',lang,error.message); }
+  }
+}
+
 async function backfill(entityType) {
   const types = entityType ? [entityType] : Object.keys(TABLES);
   let count = 0;
@@ -162,4 +173,4 @@ async function backfill(entityType) {
   return { count, configured:configured() };
 }
 
-module.exports = { enqueue, backfill, configured, startWorker, TARGETS };
+module.exports = { enqueue, backfill, configured, startWorker, translateCalculatorItem, TARGETS };
