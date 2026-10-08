@@ -22,3 +22,19 @@ Thumbs.db
 .vscode/
 .idea/
 
+
+# Backups, credentials, and local runtime databases
+*.dump
+*.backup
+*.bundle
+*.sqlite
+*.sqlite3
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+backups/
+__pycache__/
+*.pyc

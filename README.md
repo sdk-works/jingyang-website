@@ -1,112 +1,42 @@
-# 山东京阳温室科技有限公司 官网
+# 京阳温室企业官网
 
-## 🔑 默认管理员账号
+山东京阳温室科技有限公司官网源码。公司内部项目，仅授权人员使用；仓库应保持 Private，不授予公开再分发许可。
 
-| 字段 | 值 |
-|------|----|
-| 用户名 | `admin` |
-| 密码   | `Admin@123456` |
-| 角色   | 超级管理员 |
+## 组成
 
-> ⚠️ **首次登录后请立即修改密码！**
-> 后台地址：`https://你的域名/admin`
+| 目录 | 用途 |
+| --- | --- |
+| frontend | Next.js / React，多语言官网与管理后台 |
+| backend | Express API、内容管理、询盘与计算器 |
+| database | 数据库结构与迁移脚本，不包含生产数据 |
+| infrastructure | 本地翻译等配套服务配置 |
+| nginx | 反向代理配置模板 |
+| docs | 功能、测试与管理文档 |
 
----
+## 项目入口
 
-## 🚀 快速部署
+- 正式开发目录：虚拟机 `/home/user/projects/website/jingyang-website`。
+- 运行目录：`/var/www/jingyang-website`；不直接在运行目录改代码。
+- 管理后台：`/manage888`；登录信息单独保管，仓库不提供默认密码。
+- GitHub 为代码协作与备份入口，推送代码不会自动发布网站。
 
-```bash
-# 一键部署（全新服务器）
-bash deploy.sh
+## 开发与版本管理
 
-# 仅更新代码
-bash deploy.sh --update
+先阅读 [协作规范](CONTRIBUTING.md) 和 [项目管理说明](docs/PROJECT_MANAGEMENT.md)。
 
-# 仅初始化数据库
-bash deploy.sh --db-only
+1. 配置 Node.js（现有虚拟机为20.20.2），分别在 frontend、backend 执行 `npm ci`。
+2. 按各目录的 `.env.example` 创建本地配置；数据库、JWT、SMTP真实值不提交。
+3. 前端 `npm run dev`，后端 `npm run dev`。端口与接口地址以配置为准，避免与现有服务冲突。
+4. 前端发布前执行 `npm run build`；后端执行语法检查和受影响接口的回归验证。
+5. 不要在现有数据库直接执行初始化、种子脚本或一键部署脚本。
 
-# 清理缓存（修改图片/代码后）
-bash clear-cache.sh
-```
+## 功能与状态
 
-详细步骤见 [DEPLOY_v5.md](./DEPLOY_v5.md)
+包含产品、工程案例、新闻、询盘、温室计算器及中文/英文/俄文/阿拉伯文内容。
 
----
+历史发布记录：[2026-08-26 QA修复](docs/RELEASE_QA_FIXES_20260826.md)。
+版本状态：[VERSION_STATUS.md](VERSION_STATUS.md)。旧部署文档可能含过时目录和示例，执行前须核对实际部署配置。
 
-## 📁 项目结构
+## 备份边界
 
-```
-greenhouse-website/
-├── backend/              # Express API 服务（端口 4000）
-│   ├── routes/           # API 路由
-│   ├── config/           # 数据库配置
-│   ├── scripts/init.js   # 数据库初始化脚本
-│   ├── uploads/          # 上传的图片/视频
-│   └── .env.example      # 环境变量模板
-├── frontend/             # Next.js 前端（端口 3000）
-│   ├── pages/            # 页面文件
-│   ├── components/       # 组件
-│   ├── public/
-│   │   └── images/       # 静态图片
-│   │       ├── logo.png  # ← 替换 Logo
-│   │       ├── home/     # 首页背景图
-│   │       ├── about/    # 关于页图片
-│   │       ├── products/ # 产品图片（文件名=产品slug）
-│   │       ├── cases/    # 案例图片（文件名=案例slug）
-│   │       └── news/     # 新闻封面图
-│   └── .env.example
-├── database/
-│   ├── schema.sql        # 完整数据库结构
-│   └── migrate_all.sql   # 升级迁移脚本（已有库使用）
-├── nginx/
-│   └── greenhouse.conf   # Nginx 配置文件
-├── ecosystem.config.js   # PM2 进程配置
-├── deploy.sh             # 一键部署脚本
-└── clear-cache.sh        # 缓存清理脚本
-```
-
----
-
-## 🖼️ 替换 Logo
-
-1. 将 Logo 图片重命名为 `logo.png`（推荐 PNG，支持透明背景）
-2. 放入 `frontend/public/images/` 目录
-3. 推荐尺寸：`160×40px`（横版）或 `40×40px`（方形）
-4. 无需重新构建，Nginx 重载即生效：`nginx -s reload`
-
----
-
-## 🌍 多语言管理
-
-语言包位置：`frontend/public/locales/{语言代码}/common.json`
-
-| 语言 | 代码 | 文件 |
-|------|------|------|
-| 中文 | zh | locales/zh/common.json |
-| 英文 | en | locales/en/common.json |
-| 俄文 | ru | locales/ru/common.json |
-| 阿拉伯文 | ar | locales/ar/common.json |
-
-修改翻译后重启前端服务：`pm2 restart greenhouse-frontend`
-
-新增语言见 `frontend/next-i18next.config.js` 中的注释。
-
----
-
-## 🔧 日常运维
-
-```bash
-pm2 status                  # 查看服务状态
-pm2 logs greenhouse-backend # 查看后端日志
-pm2 restart all             # 重启所有服务
-bash clear-cache.sh         # 清理缓存（修改内容后）
-```
-
----
-
-## 📞 技术支持
-
-遇到问题请检查：
-1. `pm2 logs` 查看错误日志
-2. PostgreSQL 状态：`sudo systemctl status postgresql`
-3. Nginx 状态：`sudo systemctl status nginx`
+GitHub保存源码、必要静态素材、迁移脚本和文档。数据库、后台上传图片、运行环境配置要独立备份；只克隆仓库不足以恢复完整网站。详见 [备份与恢复](docs/BACKUP_AND_RECOVERY.md)。
