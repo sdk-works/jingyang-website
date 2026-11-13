@@ -147,7 +147,14 @@ export default function Footer() {
           <p className="text-xs text-gray-500">
             © {new Date().getFullYear()} 山东京阳温室科技有限公司. {t('footer.rights')}
           </p>
-          <p className="text-xs text-gray-600">{t('footer.icp')}</p>
+          <a
+            href="https://beian.miit.gov.cn/"
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            className="text-xs text-gray-600 hover:text-primary-400 transition-colors"
+          >
+            {t('footer.icp')}
+          </a>
         </div>
       </div>
     </footer>
